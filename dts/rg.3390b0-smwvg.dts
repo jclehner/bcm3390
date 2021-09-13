@@ -1,0 +1,108 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (bcm93390<b|s>0smwvg)";
+	compatible = "brcm,bcm93390b0smwvg", "brcm,bcm93390s0smwvg",
+		     "brcm,bcm3390b0", "brcm,bcm3390s0",
+		     "brcm,bcm3390",
+		     "brcm,brcmcm", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <&gic>;
+
+	identifier@0 {
+			    /* chip id    mfg id     a/c pwr    don't park */
+		chipid_reg = < 0x20404000 0x204e6120 0x03800080 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000e000 0x00000008 0x00000001 >;
+		chipid_val = < 0x33900010 0x0000c000 0x00000000 0x00000000 >;
+			     /* SMWVG */
+		boardid_msk = < 0xf0 >;
+		boardid_val = < 0x40 >;
+	};
+
+	identifier@1 {
+			    /* chip id    mfg id     a/c pwr    don't park */
+		chipid_reg = < 0x20404000 0x204e6120 0x03800080 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000f000 0x00000008 0x00000001 >;
+		chipid_val = < 0x33900010 0x00008000 0x00000000 0x00000000 >;
+			     /* SMWVG */
+		boardid_msk = < 0xf0 >;
+		boardid_val = < 0x40 >;
+	};
+
+	identifier@2 {
+			    /* chip id    mfg id     a/c pwr    don't park */
+		chipid_reg = < 0x20404000 0x204e6120 0x03800080 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000e000 0x00000008 0x00000001 >;
+		chipid_val = < 0x33900010 0x00006000 0x00000000 0x00000000 >;
+			     /* SMWVG */
+		boardid_msk = < 0xf0 >;
+		boardid_val = < 0x40 >;
+	};
+};
+
+/include/ "rg.3390b0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+/include/ "rg.3390b0-moca.dtsi"
+/include/ "rg.3390-wifi.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+&ethsw {
+	mii-port = <4 0 1000>;
+};
+
+&bassist {
+	board-pwr-supply-names =
+		"vreg-bnm-pwr-a", "vreg-bnm-pwr-b", "vreg-bnm-pwr-c";
+	vreg-bnm-pwr-a-supply = < &vreg_bnm_pwr_a >;
+	vreg-bnm-pwr-b-supply = < &vreg_bnm_pwr_b >;
+	vreg-bnm-pwr-c-supply = < &vreg_bnm_pwr_c >;
+};
+
+/ {
+	/*
+	 * One of the following controls the board power, depending upon the board
+	 * version.
+	 */
+	vreg_bnm_pwr_a: vreg-bnm-pwr-a {	/* BCM93390SMWVG_V00, BCM93390SMWVG_V01 */
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-bnm-pwr-a";
+		regulator-min-microvolt = <0>;
+		regulator-max-microvolt = <0>;
+		gpio = <&upg_aon_gpio 2 0>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	vreg_bnm_pwr_b: vreg-bnm-pwr-b {	/* BCM93390SMWVG_V10 w/out Zigbee */
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-bnm-pwr-b";
+		regulator-min-microvolt = <0>;
+		regulator-max-microvolt = <0>;
+		gpio = <&upg_aon_gpio 2 0>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	vreg_bnm_pwr_c: vreg-bnm-pwr-c {	/* BCM93390SMWVG_V10 w/ Zigbee */
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-bnm-pwr-c";
+		regulator-min-microvolt = <0>;
+		regulator-max-microvolt = <0>;
+		gpio = <&upg_aon_gpio 2 0>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	chosen {
+		filename = "rg.3390b0-smwvg.dtb";
+	};
+};

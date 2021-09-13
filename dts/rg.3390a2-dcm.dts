@@ -1,0 +1,39 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (3390a2)";
+	compatible = "brcm,bcm3390a0", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <0x1>;
+
+	identifier {
+		/* register offset */
+		chipid_reg = < 0x20404000 0x204e6120 >;
+		chipid_msk = < 0xffffffff 0x0000e000 >;
+		chipid_val = < 0x33900000 0x0000e000 >;
+		boardid_msk = < 0xf0 >;
+		boardid_val = < 0x60 >;
+	};
+};
+
+/include/ "rg.3390a0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+&ethsw {
+	led-map    = <0x0f>;
+};
+
+&dqm {
+	fpm-alloc-offset = <0x1df0 0x1df0 0x1df0>;	/* bug in Ax requires write to prior reg */
+	qsm-size = <0x3000>;
+};

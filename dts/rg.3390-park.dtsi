@@ -1,0 +1,157 @@
+/include/ "rg.3390-batt.dtsi"
+
+&pmb0 {
+	bpcm@0x0 {
+		compatible = "brcm,bpcm";
+		reg = <0x0>;
+		dev-name = "bpcm-dtp";
+		zones = <3>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x1 {
+		compatible = "brcm,bpcm";
+		reg = <0x1>;
+		dev-name = "bpcm-dfap";
+		zones = <3>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x2 {
+		compatible = "brcm,bpcm";
+		reg = <0x2>;
+		dev-name = "bpcm-d3dsmac32";
+		zones = <6>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x3 {
+		compatible = "brcm,bpcm";
+		reg = <0x3>;
+		dev-name = "bpcm-dsmacofda";
+		zones = <1>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x4 {
+		compatible = "brcm,bpcm";
+		reg = <0x4>;
+		dev-name = "bpcm-dsmacofdb";
+		zones = <1>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm_utp: bpcm@0x5 {
+		status = "disabled";	/* Causes bus hang on B0 so disable for all */
+		compatible = "brcm,bpcm";
+		reg = <0x5>;
+		dev-name = "bpcm-utp";
+		zones = <5>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x6 {
+		compatible = "brcm,bpcm";
+		reg = <0x6>;
+		dev-name = "bpcm-periph";
+		zones = <3>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x7 {
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0xa {
+		compatible = "brcm,bpcm";
+		reg = <0xa>;
+		dev-name = "bpcm-apm";
+		zones = <6>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0xb {
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0xc {
+		compatible = "brcm,bpcm";
+		reg = <0xc>;
+		dev-name = "bpcm-usmac";
+		zones = <13>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0xd {
+		compatible = "brcm,bpcm";
+		reg = <0xd>;
+		dev-name = "bpcm-tc8x";
+		zones = <9>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0xe {
+		compatible = "brcm,bpcm";
+		reg = <0xe>;
+		dev-name = "bpcm-tcofdm";
+		zones = <5>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x10 {
+		compatible = "brcm,bpcm";
+		reg = <0x10>;
+		dev-name = "bpcm-mips";
+		zones = <1>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x11 {
+		compatible = "brcm,bpcm";
+		reg = <0x11>;
+		dev-name = "bpcm-ustop";
+		zones = <1>;
+		zone-init-pwr = <0x0>;
+	};
+
+	bpcm@0x12 {
+		compatible = "brcm,bpcm";
+		reg = <0x12>;
+		dev-name = "bpcm-leap";
+		zones = <1>;
+		zone-init-pwr = <0x0>;
+	};
+
+
+	bpcm@0x13 {
+		compatible = "brcm,bpcm";
+		reg = <0x13>;
+		dev-name = "bpcm-emc";
+		zones = <1>;
+		zone-init-pwr = <0x0>;
+	};
+};
+
+&pmb1 {
+	bpcm@0x0 {
+		zone-init-pwr = <0x0>;
+	};
+};
+
+/ {
+	/delete-node/fpm@0xd3a00000;
+	/delete-node/dqm@d3800000;
+	/delete-node/rpcrgcm;
+	/delete-node/rpcsvmcm;
+	/delete-node/q-channel0;
+	/delete-node/q-channel1;
+	/delete-node/rfapskb;
+	/delete-node/mdqmrx0;
+	/delete-node/mdqmrx1;
+	/delete-node/mdqmrx2;
+	/delete-node/mdqmtx;
+	/delete-node/priv0;
+	/delete-node/mdio@d4e403c0;
+	/delete-node/ethsw@d4e00000;
+	/delete-node/pinmux@f0404100;
+};

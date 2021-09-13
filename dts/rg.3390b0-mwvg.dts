@@ -1,0 +1,121 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (bcm93390b0mwvg)";
+	compatible = "brcm,bcm93390b0mwvg",
+		     "brcm,bcm3390b0",
+		     "brcm,bcm3390",
+		     "brcm,brcmcm", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <&gic>;
+
+	identifier@0 {
+			    /* chip id    mfg id     don't park */
+		chipid_reg = < 0x20404000 0x204e6120 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000e000 0x00000001 >;
+		chipid_val = < 0x33900010 0x0000c000 0x00000000 >;
+			     /* MWVG */
+		boardid_msk = < 0xf0 >;
+		boardid_val = < 0x20 >;
+	};
+
+	identifier@1 {
+			    /* chip id    mfg id     don't park */
+		chipid_reg = < 0x20404000 0x204e6120 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000f000 0x00000001 >;
+		chipid_val = < 0x33900010 0x00008000 0x00000000 >;
+			     /* MWVG */
+		boardid_msk = < 0xf0 >;
+		boardid_val = < 0x20 >;
+	};
+};
+
+/include/ "rg.3390b0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+/include/ "rg.3390b0-moca.dtsi"
+/include/ "rg.3390-wifi.dtsi"
+/include/ "rg.3390-ethwan.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+&suntop_pmx {
+	pinctrl-0 = <&spi_pins>;
+	spi_pins: spi_pins {
+		pinctrl-single,bits = <
+			0x084 0x01000000 0x0f000000 /* gpio_071 <-- SPI_M_SCK  */
+			0x084 0x10000000 0xf0000000 /* gpio_072 <-- SPI_M_MOSI */
+			0x088 0x00000001 0x0000000f /* gpio_073 <-- SPI_M_MISO */
+			0x088 0x00000010 0x000000f0 /* gpio_074 <-- SPI_M_SS0B */
+			>;
+	};
+};
+
+&miimdiomux {
+	rgmii0-tx-select = "zero";
+	rgmii1-tx-select = "unimac";
+	unimac-rx-select = "rgmii1";
+};
+
+&switch_mdio {
+	ethwan_phy: phy@1 {
+		/* BCM54210E B0 on MWVG */
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <1>;
+	};
+};
+
+&vreg_wl1 {
+	gpio = <&upg_gpio 98 0>;
+};
+
+&vreg_wl1_rf {
+	gpio = <&upg_gpio 79 0>;
+};
+
+&wler_rfap {
+	dev-names = "wl0 wl1";
+};
+
+&wifi_rfpwr {
+	supply-names = "vreg-wl0-rf", "vreg-wl1-rf";
+	/delete-property/vreg-wl2-rf-supply;
+};
+
+&ethsw {
+	mii-port = <4 0 1000>;
+};
+
+/ {
+	/delete-node/pcie@f10c0000;
+	/delete-node/vreg-wl2;
+	/delete-node/vreg-wl2-rf;
+
+	rdb {
+		/delete-node/sdhci@f04a0100;
+		/delete-node/sdhci@f04a0300;
+
+		brcmstb-clks {
+			/delete-node/hif_sdio_card@f0480298;
+			/delete-node/hif_sdio_emmc@f0480298;
+			/delete-node/sw_sdio;
+		};
+	};
+
+	aliases {
+		/delete-property/sdhci0;
+		/delete-property/sdhci1;
+		/delete-property/pcie2;
+	};
+
+	chosen {
+		filename = "rg.3390b0-mwvg.dtb";
+	};
+};

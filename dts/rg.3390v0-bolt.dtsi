@@ -1,0 +1,85 @@
+/********************************************************************
+ * The nodes that appear below are chip specific additions and
+ * replacements to the rg.3390b0-bolt.dtsi file.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+&eth1 {
+	if-id = <0x4>;
+	if-sub-id = <0x2>;
+};
+
+&ethsw {
+	phy-port-mask = <0x5>;
+	phy-handles = <&sw_p0_phy>,
+		      <&sw_p2_phy>;
+	led-map = <0x05>;
+};
+
+&switch_mdio {
+	/delete-property/sw_p1_phy;
+	/delete-property/sw_p3_phy;
+};
+
+&usb_phy0 {
+	clocks = <&sw_usb20>;
+	/delete-property/has_xhci;
+};
+
+&rf4ce {
+	status = "disabled";
+	/* Old BOLT versions will set the above status to "ok" for all platforms,
+	so add another property for new software images to discern whether
+	status property is to be obeyed. Only valid platforms have this new property
+	set correctly to "true". */
+	trust-status = "false";
+};
+
+/ {
+	/delete-node/pcie@f1080000;
+	/delete-node/pcie@f1090000;
+	/delete-node/pcie@f10c0000;
+	/delete-node/ethernet2;
+	/delete-node/ethernet3;
+
+	aliases {
+		/delete-property/pcie0;
+		/delete-property/pcie1;
+		/delete-property/pcie2;
+		/delete-property/xhci0_0;
+		/delete-property/usbphy1;
+		/delete-property/ehci1_0;
+		/delete-property/ohci1_0;
+		/delete-property/xhci1_0;
+		/delete-property/bdc1_0;
+		/delete-property/usb1;
+	};
+
+	rdb {
+		/delete-node/xhci_v2@f1001000;
+		/delete-node/usb-phy@f1010200;
+		/delete-node/ehci_v2@f1010300;
+		/delete-node/ohci_v2@f1010400;
+		/delete-node/xhci_v2@f1011000;
+		/delete-node/bdc_v2@f1012000;
+		/delete-node/usb@f1010200;
+
+		usb@f1000200 {
+			/delete-node/xhci@f1001000;
+		};
+
+		brcmstb-clks {
+			/delete-node/pcie_alwayson@f048039c;
+			/delete-node/pcie_duallane_300@f048039c;
+			/delete-node/pcie_rcbypref_100@f048039c;
+			/delete-node/pcie_108@f04803a4;
+			/delete-node/pcie_54@f04803a4;
+			/delete-node/pcie_gisb@f04803a4;
+			/delete-node/pcie_scb@f04803a4;
+			/delete-node/sw_pcie0;
+			/delete-node/sw_usb30;
+		};
+	};
+};

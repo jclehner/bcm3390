@@ -1,0 +1,54 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (bcm93390z0smwvg)";
+	compatible = "brcm,bcm93390z0smwvg",
+		     "brcm,bcm3390z0",
+		     "brcm,bcm3390",
+		     "brcm,brcmcm", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <&gic>;
+
+	identifier@0 {
+			    /* chip id    mfg id     a/c pwr    don't park */
+		chipid_reg = < 0x20404000 0x204e6120 0x03800080 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000f000 0x00000008 0x00000001 >;
+		chipid_val = < 0x33900060 0x0000a000 0x00000000 0x00000000 >;
+			     /* SMWVG */
+		boardid_msk = < 0xf0 >;
+		boardid_val = < 0x40 >;
+	};
+};
+
+/include/ "rg.3390b0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+/include/ "rg.3390-wifi.dtsi"
+/include/ "rg.3390z0-bolt.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+&wler_rfap {
+	dev-names = "wl0 wl1";
+};
+
+&wifi_rfpwr {
+	supply-names = "vreg-wl0-rf", "vreg-wl1-rf";
+	/delete-property/vreg-wl2-rf-supply;
+};
+
+/ {
+	/delete-node/vreg-wl2;
+	/delete-node/vreg-wl2-rf;
+
+	chosen {
+		filename = "rg.3390z0-smwvg.dtb";
+	};
+};

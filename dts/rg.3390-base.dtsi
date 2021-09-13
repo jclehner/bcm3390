@@ -1,0 +1,519 @@
+/ {
+	//Boot Assist
+	bassist: ba {
+		compatible = "brcm,brcm-ba";
+		version = < 0x00020002 >;
+		interrupts = <0 23 0x4 0 24 0x4>;
+		reg = <0x0 0x04000000 0x0 0x05500000>, //Memory Region
+		      <0x0 0xd3800000 0x0 0x80>, //CPU_COMM_REGS_CPUC
+		      <0x0 0xd3881000 0x0 0x50>, //RG_TOP_CTRL
+		      <0x0 0xd3880000 0x0 0x374>, //CM_TOP_CTRL
+		      <0x0 0xf0410000 0x0 0x600>, //AON_CTRL
+		      <0x0 0xf1500000 0x0 0x3fff>, //MEMC_0
+		      <0x0 0xf1580000 0x0 0x3fff>, //MEMC_1
+		      <0x0 0xd3890158 0x0 0x8>, //JTAG_OTP_UB
+		      <0x0 0xd2100000 0x0 0x300>, //LEAP_CTRL: Control registers
+		      <0x0 0xd3c009c0 0x0 0x8>; //LED: Control registers
+		reg-names = "mem", "cpuc", "rgtop", "cmtop", "aon", "mc0", "mc1", "otp", "leap", "leds";
+		allow-user-map;
+		stb = < 0xFFFFFFFF 0 2 50 10 >; //start, size, # cpu, priority, latency
+		rg = < 0xFFFFFFFF 0 2 50 10 >; //start, size, # cpu, priority, latency
+		tp1 = < 0x08000000 0x01400000 >; //start, size
+		cm_xfer = < 0x09410000 0x20000 0x2 >; //start, size, count
+		leap = < 0x07F00000 0x100000>; //start, size
+		arm_boot_rom = <0x09430000 0x00010000>; //start, size
+		cm_atw = < 0x0 0x04000000 0x4000000 0x0 0x4807FFFC 0x0 0x0 0x0 >; //index, start, size, destination, client0-3
+		cm_dsp_atw = < 0x1 0x08000000 0x00400000 0x07c00000 0x4804FFFC 0x0 0x0 0x0 >; //index, start, size, destination, client0-3
+		cm_boot_atw = < 0x2 0x09400000 0x10000 0x1fc00000 0x40000 0x0 0x0 0x0 >; //index, start, size, destination, client0-3
+		leds = < 0xd3c009c0 0x8>; //start, size
+		//arc=<memc, index, ubus, exclusive, start, end, r_clients[8], w_clients[8]>
+		rg-batt-mode = "off";
+	};
+
+	mbox: mbox {
+		compatible = "brcm,brcm-mbox";
+		reg = <0x0 0xd3800080 0x0 0x80>,  //MBOX_CPUC
+		      <0x0 0xd3800000 0x0 0x80>;  //CPU_COMM_REGS_CPUC
+		interrupts = <0 129 0x4>;
+		read = < 0x0000011F >; /* 0,1,2,3,4,8 */
+		write = < 0x000003E4 >; /* 2, 5, 6, 7, 8, 9 */
+	};
+
+	fpm: fpm@0xd3a00000 {
+		compatible = "brcm,fpm";
+		reg = <0x0 0x0ac00000 0x0 0x01000000>,	/* Free Pool 0	*/
+		      <0x0 0xd3a00000 0x0 0x30133>,	/* Registers	*/
+		      <0x0 0x0cc00000 0x0 0x01000000>;	/* Free Pool 1	*/
+		interrupts = <0 127 0>;
+		init;
+		pool-alloc-weight	= <1 1>;
+		pool-free-weight	= <1 1>;
+		track-tokens = <1>;
+		track-on-err = <0>;
+		/*
+		 * System-wide all FPM's used for network packets need to have space reserved
+		 * at the head and possibly tail of the buffer. The head and tail padding is only
+		 * required for network buffers. FPM buffers used for other purposes do not
+		 * require any padding. DOCSIS necessitates a small head padding while systems
+		 * with WiFi not only require a large head padding but also need tail padding.
+		 * The values specified in the "head-pad" and "tail-pad" parameters below are
+		 * available to other Linux drivers via an FPM driver API and to the rest of the
+		 * system (i.e. DOCSIS HW, network accelerators, etc) via an FPM scratch register.
+		 *
+		 * DOCSIS-only Head Padding =		Reason
+		 * 32					Runner <--> DFAP header
+		 *
+		 * DOCSIS + WiFi Head Padding =		Reason
+		 * 240					BRCM WiFi driver's head padding requirement
+		 *
+		 * DOCSIS + WiFi Tail Padding =		Reason
+		 *   4					struct skb_shared_info alignment
+		 * + 40					sizeof(struct skb_shared_info) - sizeof(skb_frag_t array)
+		 * + 4					struct sk_buff alignment
+		 * + 200			      	sizeof(struct sk_buff)
+		 * + 8					sizeof(WLER_CNTXT)	"wl_erouter context"
+		 *
+		 * Below we default to a DOCSIS-only head and tail pad and we let the WiFI include
+		 * file override these to larger values for the DOCSIS + WiFi platforms.
+		 *
+		 * The head and tail padding is also closely coupled with the FPM buffer chunk size
+		 * (256 or 512 bytes). 256 byte chunks can be used on DOCSIS-only systems because they
+		 * only require a small head padding which can be accomodated with a minimum-size 256 byte
+		 * buffer. This allows the FPM and Runner pools to be minimized (32MB per pool).
+		 * WiFi systems, however, require head and tail padding large enough that a 256 byte
+		 * buffer is insufficient for even the smallest packet so a 512 byte chunk size is used
+		 * which also ensures that FPM buffers of sufficient size to hold the largest possible
+		 * packets can be allocated. This larger chunk size also uses twice as much memory for
+		 * the FPM and Runner pools (64MB per pool).
+		 *
+		 * Because the memory required for the FPM and Runner pools varies with the chunk size
+		 * any changes to the chunk size necessitates changes to the pool addresses and sizes
+		 * specified in the FPM and Runner "reg" properties as well as the "reserved-memory" node.
+		 */
+		chunk-size = <256>;
+		net-buf-head-pad = <16>;
+		net-buf-tail-pad = <0>;
+
+		lwm-watchdog-timeout = <300000>;	/* 5 minutes */
+	};
+
+	dqm: dqm@d3800000 {
+		compatible = "brcm,dqm";
+		reg = <0x0 0xd3800000 0x0 0xa580>;
+		interrupts = <0 129 0>;
+
+		dev-name = "cpucomm";
+
+		l1-irq-mask-offset	= <0x0058>;
+		l1-irq-status-offset	= <0x005c>;
+		l1-irq-dqm-mask		= <0x00400000 0x00200000 0x00100000>;
+		token-offset		= <0x1400>;
+
+		cfg-offset		= <0x1c00 0x1c00 0x1c00>;
+		lwm-irq-mask-offset	= <0x1cb4 0x1d44 0x1ddc>;
+		lwm-irq-status-offset	= <0x1ca0 0x1d30 0x1dc8>;
+		ne-irq-mask-offset	= <0x1c60 0x1cd8 0x1d6c>;
+		ne-irq-status-offset	= <0x1c18 0x1cc4 0x1d58>;
+		ne-status-offset	= <0x1c20 0x1cc8 0x1d5c>;
+		hwm-irq-mask-offset	= <0x1c8c 0x1d20 0x1db4>;
+		hwm-irq-status-offset	= <0x1c78 0x1d0c 0x1da0>;
+		tmr-irq-mask-offset	= <0x1c4c 0x1cfc 0x1d90>;
+		tmr-irq-status-offset	= <0x1c38 0x1ce8 0x1d7c>;
+		fpm-alloc-offset	= <0x1df4 0x1df4 0x1df4>;
+
+		q-ctl-base-offset	= <0x8000 0x8400 0x8800>;
+		q-tmr-base-offset	= <0x2000 0x2100 0x2200>;
+		q-data-base-offset	= <0x9000 0x9400 0x9800>;
+		q-status-base-offset	= <0x7400 0x7480 0x7500>;
+		q-mib-base-offset	= <0xa000 0xa200 0xa400>;
+		q-count			= <96>;
+		cfg-qsm			= <1>;
+		qsm-size		= <0x2fc0>;	/* Bx and beyond top 256 bytes reserved for random seed created by bootrom */
+		#qsm-alloc-str-cells	= <8>;
+		/* Following Queues are reserved but not used */
+		/* 36 : STB DS Forward (STB-->Runner)         */
+		/* 37 : STB US Forward (STB-->Runner)         */
+		/* 38 : STB DS Egress  (STB-->Runner)         */
+		/* 39 : STB US Egress  (STB-->Runner)         */
+		/* 44 : Viper DS Forward (DFAP-->Runner)      */
+		/* 45 : Viper US Forward (DFAP-->Runner)      */
+		/* 46 : Viper DS Egress  (DFAP-->Runner)      */
+		/* Q #, # words/element, # elements (depth), offload(1)/non-offload(0), LWM, HWM, timeout(ns), Name */
+		qsm-allocation-str	= "2",   "4",  "8",     "1", "2",    "1",    "0",    "RPC RG-->CM",
+					  "3",   "4",  "8",     "1", "2",    "1",    "0",    "RPC RG<--CM",
+					  "6",   "4",  "8",     "1", "2",    "1",    "0",    "RPC STB-->CM",
+					  "7",   "4",  "8",     "1", "2",    "1",    "0",    "RPC STB<--CM",
+					  "8",   "4",  "8",     "1", "2",    "1",    "0",    "RPC DECT-->CM",
+					  "9",   "4",  "8",     "1", "2",    "1",    "0",    "RPC DECT<--CM",
+					  "14",  "2",  "16",    "1", "4",    "1",    "0",    "Private Network RG-->CM",
+					  "15",  "2",  "64",    "1", "4",    "1",    "0",    "Private Network RG<--CM",
+					  "20",  "4",  "8",     "1", "2",    "1",    "0",    "RPC SVM-->CM",
+					  "21",  "4",  "8",     "1", "2",    "1",    "0",    "RPC SVM<--CM",
+					  "32",  "4",  "64",    "1", "16",   "1",    "0",    "RG DS Forward (RG-->Runner)",
+					  "34",  "4",  "64",    "1", "16",   "1",    "0",    "RG DS Egress (RG-->Runner)",
+					  "35",  "4",  "64",    "1", "16",   "1",    "0",    "RG US Egress (RG-->Runner)",
+					  "47",  "2",  "4000",  "1", "512",  "1",    "0",    "SKB Prealloc (RG-->Runner)",
+					  "48",  "4",  "4000",  "1", "64",   "64",   "1000", "RG Exception LAN (Runner-->RG)",
+					  "49",  "4",  "256",   "1", "64",   "1",    "0",    "RG Exception Ctl (Runner-->RG)",
+					  "50",  "4",  "4000",  "1", "64",   "64",   "1000", "RG Exception WAN (Runner-->RG)",
+					  "51",  "4",  "4000",  "1", "64",   "64",   "1000", "RG Expected 0    (Runner-->RG)",
+					  "52",  "4",  "4000",  "1", "64",   "64",   "1000", "RG Expected 1    (Runner-->RG)",
+					  "53",  "4",  "4000",  "1", "64",   "64",   "1000", "RG Expected 2    (Runner-->RG)",
+					  "54",  "4",  "4000",  "1", "64",   "64",   "1000", "RG Expected 3    (Runner-->RG)",
+					  "55",  "1",  "4000",  "1", "16",   "1000", "0",    "SKB Recycle (Runner-->RG)";
+	};
+
+	pwr: power {
+		boot-state = "ac";
+	};
+
+	rpcrgcm: rpcrgcm {
+		compatible = "brcm,itc-rpc";
+		dev-name = "rg-cm";
+		dqm = "cpucomm";
+		tx-q = <2>;
+		rx-q = <3>;
+	};
+
+	rpcsvmcm: rpcsvmcm {
+		compatible = "brcm,itc-rpc";
+		dev-name = "svm-cm";
+		dqm = "cpucomm";
+		tx-q = <20>;
+		rx-q = <21>;
+	};
+
+	qchan0: q-channel0 {
+		dev-name = "fap-exception";
+
+		#tx-q-cells = <4>;
+		/*	DQM device,  	Q#,	Priority	US/DS					*/
+		tx-q =	"cpucomm",	"35",	"0",		"upstream",	/* RG upstream egress	*/
+			"cpucomm",	"34",	"0",		"downstream";	/* RG downstream egress	*/
+		#rx-q-cells = <4>;
+		/*	DQM device,	Q#,	Priority						*/
+		rx-q =	"cpucomm",	"49",	"0",		"control",    	/* Runner-->RG 0	*/
+			"cpucomm",	"51",	"1",		"expected",   	/* Runner-->RG 1	*/
+			"cpucomm",	"48",	"2",		"upstream",    	/* Runner-->RG 2	*/
+			"cpucomm",	"50",	"3",		"downstream";	/* Runner-->RG 3	*/
+
+		type = "fap-exception";
+		q-msg-fmt = "runner-fpm";
+	};
+
+	qchan1: q-channel1 {
+		dev-name = "cm-private";
+
+		#tx-q-cells = <3>;
+		/*	DQM device,	Q#,	Priority	US/DS   			*/
+		tx-q =	"cpucomm",	"14",	"0";				/* RG-->CM	*/
+		#rx-q-cells = <3>;
+		/*	DQM device,	Q#,	Priority					*/
+		rx-q =	"cpucomm",	"15",	"0";				/* CM-->RG	*/
+
+		type = "point-to-point";
+		q-msg-fmt = "gfap-fpm";
+	};
+
+	rfapskb: rfapskb {
+		compatible = "brcm,dqskb";
+		dev-name = "dqskb-rfap";
+		dqm = "cpucomm";
+		tx-q = <47>;
+		rx-q = <55>;
+	};
+
+	mdqmrx0: mdqmrx0 {
+		compatible = "brcm,mdqm";
+		dev-name = "mdqmrx0";
+		dqm = "cpucomm";
+		q-type = "rx";
+		q-num = <56 57>;
+	};
+
+	mdqmrx1: mdqmrx1 {
+		compatible = "brcm,mdqm";
+		dev-name = "mdqmrx1";
+		dqm = "cpucomm";
+		q-type = "rx";
+		q-num = <58 59>;
+	};
+
+	mdqmrx2: mdqmrx2 {
+		compatible = "brcm,mdqm";
+		dev-name = "mdqmrx2";
+		dqm = "cpucomm";
+		q-type = "rx";
+		q-num = <60 61>;
+	};
+
+	mdqmtx: mdqmtx {
+		compatible = "brcm,mdqm";
+		dev-name = "mdqmtx";
+		dqm = "cpucomm";
+		q-type = "tx";
+		q-num = <33>;
+	};
+
+	priv0: priv0 { /* RG <--> CM private */
+		compatible = "brcm,dqnet";
+		channel = <&qchan1>;
+		dev-name = "priv0";
+		demux = "none";
+		link-type = "rpc";
+		rpc-channel = <&rpcrgcm>;
+	};
+
+	eth0: ethernet0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth0";
+		if-id = <2>;		/* rdpa_if_lan0 */
+		if-sub-id = <0>;	/* if-sub-id must match the first column in phy-port node */
+		demux = "subid";
+		link-type = "switch";
+		connection-type = "internal";
+		brcm-tag;
+	};
+
+	eth1: ethernet1 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth1";
+		if-id = <3>;		/* rdpa_if_lan1 */
+		if-sub-id = <1>;	/* if-sub-id must match the first column in phy-port node */
+		demux = "subid";
+		link-type = "switch";
+		connection-type = "internal";
+		brcm-tag;
+	};
+
+	eth2: ethernet2 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth2";
+		if-id = <4>;		/* rdpa_if_lan2 */
+		if-sub-id = <2>;	/* if-sub-id must match the first column in phy-port node */
+		demux = "subid";
+		link-type = "switch";
+		connection-type = "internal";
+		brcm-tag;
+	};
+
+	eth3: ethernet3 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth3";
+		if-id = <5>;		/* rdpa_if_lan3 */
+		if-sub-id = <3>;	/* if-sub-id must match the first column in phy-port node */
+		demux = "subid";
+		link-type = "switch";
+		connection-type = "internal";
+		brcm-tag;
+	};
+
+	cm0: cm0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "cm0";
+		if-id = <0>;		/* rdpa_if_wan0 */
+		demux = "subid";
+		link-type = "rpc";
+		rpc-channel = <&rpcrgcm>;
+	};
+
+	miimdiomux: miimdiomux@d3c026a0 {
+		compatible = "brcm,miimdiomux3390";
+		reg = <0 0xd3c026a0 0 0x4>;
+		rgmii0-tx-select = "unimac";
+		rgmii1-tx-select = "zero";
+		p7-rx-select = "runner";
+		p4-rx-select = "moca";
+		unimac-rx-select = "rgmii0";
+		unimac-mdio-select = "mdio0";
+		switch-mdio-select = "mdio1";
+	};
+
+	unimac_mdio: mdio@d040062c {
+		compatible = "brcm,unimac-mdio";
+		dev-name = "UniMAC MII bus";
+		reg = <0 0xd040062c 0 0x8>;
+		reg-names = "unimac_mdio";
+		#size-cells = <1>;
+		#address-cells = <0>;
+	};
+
+	switch_mdio: mdio@d4e403c0 {
+		compatible = "brcm,unimac-mdio";
+		dev-name = "Switch MDIO bus";
+		reg = <0 0xd4e403c0 0 0x8>;
+		reg-names = "switch_mdio";
+		#size-cells = <1>;
+		#address-cells = <0>;
+		sw_p0_phy: phy@8 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <8>;
+			phy-mode = "rgmii";
+		};
+		sw_p1_phy: phy@9 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <9>;
+			phy-mode = "rgmii";
+		};
+		sw_p2_phy: phy@10 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <10>;
+			phy-mode = "rgmii";
+		};
+		sw_p3_phy: phy@11 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <11>;
+			phy-mode = "rgmii";
+		};
+	};
+
+	ethsw: ethsw@d4e00000 {
+		compatible = "brcm,ethsw";
+		reg = <0x0 0xd4e00000 0x0 0x42000>,
+		      <0x0 0xd3c009c0 0x0 0x2c>;
+		interrupts = <0 113 0>,
+			     <0 114 0>;
+		dev-name = "ethsw";
+		imp-port = <5 2000>,
+			   <7 2000>,
+			   <8 2000>;
+		eee-support = <1>;
+		high-speed-imp = <1>;
+		phy-handles = <&sw_p0_phy>,
+			      <&sw_p1_phy>,
+			      <&sw_p2_phy>,
+			      <&sw_p3_phy>;
+		subid-port-offset = <0>;
+		#size-cells = <1>;
+		#address-cells = <0>;
+	};
+
+	runner: runner@0xd5000000 {
+		compatible = "brcm,rdpa_cm";
+		reg = <0x0 0xd5000000 0x0 0x000fc460>,	/* Registers			*/
+		      <0x0 0x09c00000 0x0 0x01000000>,	/* Runner Extra Memory 0	*/
+		      <0x0 0x0bc00000 0x0 0x01000000>,	/* Runner Extra Memory 1	*/
+		      <0x0 0x09500000 0x0 0x00700000>;	/* Runner NAT Cache		*/
+		freq = <800>;				/* MHz				*/
+		lag-ports = < 0 1 2 >;
+	};
+
+	aon_pin_ctrl: pinmux@f0410700 {
+		compatible = "pinctrl-single";
+		reg = <0 0xf0410700 0 0xc>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-single,bit-per-mux;
+		pinctrl-single,register-width = <32>;
+		pinctrl-single,function-mask = <0x1>;
+		pinctrl-names = "default";
+	};
+
+	suntop_pmx: pinmux@f0404100 {
+		compatible = "pinctrl-single";
+		reg = <0 0xf04040a4 0 0xc4>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-single,bit-per-mux;
+		pinctrl-single,register-width = <32>;
+		pinctrl-single,function-mask = <0x1>;
+		pinctrl-names = "default";
+	};
+
+	pmb0: pmb@0xd3c03100 {
+		compatible = "brcm,pmb";
+		reg = <0 0xd3c03100 0 0x50000>;
+		#address-cells = <0>;
+		#size-cells = <1>;
+		direct-access;
+
+		bpcm@0x7 {
+			compatible = "brcm,bpcm";
+			reg = <0x7>;
+			dev-name = "bpcm-fpm";
+			zones = <1>;
+			zone-init-pwr = <0x1>;
+			dyn-clk-scale-div = <0x1 0x4>;
+		};
+
+		bpcm@0x8 {
+			compatible = "brcm,bpcm";
+			reg = <0x8>;
+			dev-name = "bpcm-cpuc";
+			zones = <1>;
+			zone-init-pwr = <0x1>;
+		};
+
+		unimac_pwr: bpcm@0xb {
+			compatible = "brcm,bpcm";
+			reg = <0xb>;
+			dev-name = "bpcm-unimac";
+			zones = <1>;
+			zone-init-pwr = <0x0>;
+			dyn-clk-scale-div = <0x1 0x4>;
+		};
+	};
+
+	pmb1: pmb@0xf10b0f00 {
+		compatible = "brcm,pmb";
+		reg = <0 0xf10b0f00 0 0x10>;
+		#address-cells = <0>;
+		#size-cells = <1>;
+		version = <2>;
+
+		bpcm@0x0 {
+			compatible = "brcm,bpcm";
+			reg = <0x0>;
+			dev-name = "bpcm-rdp";
+			zones = <2>;
+			zone-init-pwr = <0x3>;
+		};
+	};
+
+	i2c_a: i2c@f040a300  {
+		clock-frequency = <50000>;
+		compatible = "brcm,brcmper-i2c";
+		reg = < 0x0 0xf040a300 0x0 0x58>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+	};
+
+	i2c_d: i2c@f040a400 {
+		clock-frequency = <50000>;
+		compatible = "brcm,brcmper-i2c";
+		reg = <0x0 0xf040a400 0x0 0x58>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		wbid: wbid@0 {
+			compatible = "brcm,wbid";
+			reg = <0x24>;
+		};
+	};
+
+	ubus-capture {
+		compatible = "brcm,ubus-capture";
+		reg =	< 0x0 0xd3e00000 0x0 0x1000 >,
+			< 0x0 0xd7e00000 0x0 0x1000 >;
+		segments = < 6 2 >;
+		/*
+		 * There is no reliably timely way to shut off the capture engines.
+		 * They will shut off eventually after you turn them off, but it
+		 * takes a while (1 sec?).
+		 * So we have to filter out our ubus access cycles if we want to
+		 * capture and display bus errors.
+		 */
+		// exlude ubus3 engine complex at 0xd3e00000
+		address-range = < 0xd3e00000 0xd3e00fff >;
+		address-exclude = <1>;
+		// exlude ubus3 engine complex at 0xd7e00000
+		pid-range = < 95 96 >;
+		pid-exclude = <1>;
+		enabled-at-boot = "no";
+	};
+};

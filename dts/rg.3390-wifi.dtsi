@@ -1,0 +1,184 @@
+&rsvd_rg_memc0 {	
+	reg = <0x0 0x4000000 0x0 0x9c00000>;   /* TCH: Size reduced from 0xdc00000 to 0x9c00000 */
+};
+
+&fpm {
+	reg = <0x0 0x0bc00000 0x0 0x02000000>,	/* Free Pool 0			*/
+	      <0x0 0xd3a00000 0x0 0x30133>,	    /* Registers			*/
+	      <0x0 0x0 0x0 0x0>;               /* Free Pool 1 - TCH: Disabled second FPM pool*/
+	chunk-size = <512>;
+	net-buf-head-pad = <240>;
+	net-buf-tail-pad = <256>;
+};
+
+&runner {
+	reg = <0x0 0xd5000000 0x0 0x000fc460>,	/* Registers			*/
+	      <0x0 0x09c00000 0x0 0x02000000>,	/* Runner Extra Memory 0	*/
+	      <0x0 0x0 0x0 0x0>,                /* Runner Extra Memory 1 - TCH: Disabled second FPM pool */
+	      <0x0 0x09500000 0x0 0x00700000>;	/* Runner NAT Cache		*/
+	freq = <800>;				/* MHz				*/
+	lag-ports = < 0 1 2 >;
+};
+
+/ {
+	vreg_wl0: vreg-wl0 {
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-wl0";
+		regulator-min-microvolt = <0>;
+		regulator-max-microvolt = <0>;
+		gpio = <&upg_gpio 98 0>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	vreg_wl1: vreg-wl1 {
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-wl1";
+		regulator-min-microvolt = <0>;
+		regulator-max-microvolt = <0>;
+		gpio = <&upg_gpio 80 0>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	vreg_wl2: vreg-wl2 {
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-wl2";
+		regulator-min-microvolt = <0>;
+		regulator-max-microvolt = <0>;
+		gpio = <&upg_gpio 94 0>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	vreg_wl0_rf: vreg-wl0-rf {
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-wl0-rf";
+		regulator-min-microvolt = <0>;
+		regulator-max-microvolt = <0>;
+		gpio = <&upg_gpio 79 0>;
+		enable-active-high;
+	};
+
+	vreg_wl1_rf: vreg-wl1-rf {
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-wl1-rf";
+		regulator-min-microvolt = <0>;
+		regulator-max-microvolt = <0>;
+		gpio = <&upg_gpio 81 0>;
+		enable-active-high;
+	};
+
+	vreg_wl2_rf: vreg-wl2-rf {
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-wl2-rf";
+		regulator-min-microvolt = <0>;
+		regulator-max-microvolt = <0>;
+		gpio = <&upg_gpio 96 0>;
+		enable-active-high;
+	};
+
+	wifi_wps: wifi_wps {
+		compatible = "brcm,wps-gpio";
+		dev-name = "wps-gpio";
+		led0-gpio = <&upg_aon_gpio 9 1>;
+		led1-gpio = <&upg_aon_gpio 10 0>;
+		pbc-gpio = <&upg_gpio 99 0>;
+		interrupt-parent = <&upg_gpio>;
+		interrupts = <99 3>;
+	};
+
+	wifi_rfpwr: wifi_rfpwr {
+		compatible = "brcm,wrfpwr";
+		dev-name = "wrfpwr";
+	};
+
+	netdev_rfap: netdev_rfap {
+		compatible = "brcm,netdev-rfap";
+		dev-name = "wl%d";
+		num-ifs  = <2>;
+		wl0: wl0 {
+			compatible = "brcm,netdev-rfap";
+			rx-q = <33>;
+			tx-q = <56>;
+			dqm-block = "cpucomm";
+			rdpa-if-ssid = <0 1 2 3 4 5 6 7>;
+		};
+		wl1: wl1 {
+			compatible = "brcm,netdev-rfap";
+			rx-q = <33>;
+			tx-q = <58>;
+			dqm-block = "cpucomm";
+			rdpa-if-ssid = <8 9 10 11 12 13 14 15>;
+		};
+	};
+
+	wler_rfap:  wler_rfap {
+		compatible = "brcm,wler-rfap";
+		dev-names = "wl0 wl1 wl2";
+	};
+};
+
+&pcie0 {
+	supply-names = "vreg-wl0";
+	vreg-wl0-supply = <&vreg_wl0>;
+};
+
+&pcie1 {
+	supply-names = "vreg-wl1";
+	vreg-wl1-supply = <&vreg_wl1>;
+};
+
+&pcie2 {
+	supply-names = "vreg-wl2";
+	vreg-wl2-supply = <&vreg_wl2>;
+};
+
+&wifi_rfpwr {
+        supply-names = "vreg-wl0-rf", "vreg-wl1-rf", "vreg-wl2-rf";
+        vreg-wl0-rf-supply = <&vreg_wl0_rf>;
+        vreg-wl1-rf-supply = <&vreg_wl1_rf>;
+        vreg-wl2-rf-supply = <&vreg_wl2_rf>;
+};
+
+&dqm {
+	#qsm-alloc-str-cells	= <8>;
+	/* Following Queues are reserved but not used */
+	/* 36 : STB DS Forward (STB-->Runner)         */
+	/* 37 : STB US Forward (STB-->Runner)         */
+	/* 38 : STB DS Egress  (STB-->Runner)         */
+	/* 39 : STB US Egress  (STB-->Runner)         */
+	/* 44 : Viper DS Forward (DFAP-->Runner)      */
+	/* 45 : Viper US Forward (DFAP-->Runner)      */
+	/* 46 : Viper DS Egress  (DFAP-->Runner)      */
+	/* Q #, # words/element, # elements (depth), offload(1)/non-offload(0), LWM, HWM, timeout(ns), Name */
+	qsm-allocation-str	= "2",   "4",  "8",     "1", "2",    "1",    "0",    "RPC RG-->CM",
+				  "3",   "4",  "8",     "1", "2",    "1",    "0",    "RPC RG<--CM",
+				  "6",   "4",  "8",     "1", "2",    "1",    "0",    "RPC STB-->CM",
+				  "7",   "4",  "8",     "1", "2",    "1",    "0",    "RPC STB<--CM",
+				  "8",   "4",  "8",     "1", "2",    "1",    "0",    "RPC DECT-->CM",
+				  "9",   "4",  "8",     "1", "2",    "1",    "0",    "RPC DECT<--CM",
+				  "14",  "2",  "16",    "1", "4",    "1",    "0",    "Private Network RG-->CM",
+				  "15",  "2",  "64",    "1", "4",    "1",    "0",    "Private Network RG<--CM",
+				  "20",  "4",  "8",     "1", "2",    "1",    "0",    "RPC SVM-->CM",
+				  "21",  "4",  "8",     "1", "2",    "1",    "0",    "RPC SVM<--CM",
+				  "32",  "4",  "64",    "1", "16",   "1",    "0",    "RG DS Forward (RG-->Runner)",
+				  "33",  "4",  "2048",  "1", "512",  "1",    "0",    "WiFi US Forward (WiFi-->Runner)",
+				  "34",  "4",  "64",    "1", "16",   "1",    "0",    "RG DS Egress (RG-->Runner)",
+				  "35",  "4",  "64",    "1", "16",   "1",    "0",    "RG US Egress (RG-->Runner)",
+				  "47",  "2",  "4000",  "1", "512",  "1",    "0",    "SKB Prealloc (RG-->Runner)",
+				  "48",  "4",  "4000",  "1", "64",   "64",   "1000", "RG Exception LAN (Runner-->RG)",
+				  "49",  "4",  "256",   "1", "64",   "1",    "0",    "RG Exception Ctl (Runner-->RG)",
+				  "50",  "4",  "4000",  "1", "64",   "64",   "1000", "RG Exception WAN (Runner-->RG)",
+				  "51",  "4",  "4000",  "1", "64",   "64",   "1000", "RG Expected 0    (Runner-->RG)",
+				  "52",  "4",  "4000",  "1", "64",   "64",   "1000", "RG Expected 1    (Runner-->RG)",
+				  "53",  "4",  "4000",  "1", "64",   "64",   "1000", "RG Expected 2    (Runner-->RG)",
+				  "54",  "4",  "4000",  "1", "64",   "64",   "1000", "RG Expected 3    (Runner-->RG)",
+				  "55",  "1",  "4000",  "1", "16",   "1000", "0",    "SKB Recycle (Runner-->RG)",
+				  "56",  "4",  "2000",  "1", "1000", "64",   "6000", "WiFi 0 DS (Runner-->WiFi)",
+				  "57",  "4",  "2000",  "1", "1000", "1",    "0",    "WiFi 0 DS (Runner-->WiFi)",
+				  "58",  "4",  "2000",  "1", "1000", "64",   "6000", "WiFi 1 DS (Runner-->WiFi)",
+				  "59",  "4",  "2000",  "1", "1000", "1",    "0",    "WiFi 1 DS (Runner-->WiFi)",
+				  "60",  "4",  "2000",  "1", "1000", "64",   "6000", "WiFi 2 DS (Runner-->WiFi)",
+				  "61",  "4",  "2000",  "1", "1000", "1",    "0",    "WiFi 2 DS (Runner-->WiFi)";
+};

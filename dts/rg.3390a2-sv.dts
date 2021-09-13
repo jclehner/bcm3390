@@ -1,0 +1,81 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (3390a2)";
+	compatible = "brcm,bcm3390a0", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <0x1>;
+
+	identifier {
+		/* register offset */
+		chipid_reg = < 0x20404000 0x204e6120 >;
+		chipid_msk = < 0xffffffff 0x0000e000 >;
+		chipid_val = < 0x33900000 0x0000e000 >;
+		boardid_msk = < 0xf0 >;
+		boardid_val = < 0x10 >;
+	};
+};
+
+/include/ "rg.3390a0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+/include/ "rg.3390a2-moca.dtsi"
+/include/ "rg.3390-wifi.dtsi"
+/include/ "rg.3390-ethwan.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+&switch_mdio {
+	ethwan_phy: phy@1 {	/* external bcm54210 */
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <1>;
+	};
+};
+
+&suntop_pmx {
+	pinctrl-0 = <&ethwan_pins>;
+	ethwan_pins: ethwan_pins {
+		pinctrl-single,bits = <
+			0x000 0x00000020 0x00000000 /* RGMII1 pad amp		<-- disable */
+			0x000 0x00000010 0x00000000 /* RGMII1 pad sel gmii	<-- HV CMOS/RGMII25 */
+			0x000 0x00000008 0x00000008 /* RGMII1 pad modehv	<-- HV CMOS/RGMII25/GMII33 */
+			0x000 0x00000007 0x00000007 /* RGMII1 pad sel		<-- DRIVE_16MA */
+			0x060 0xf0000000 0x10000000 /* gpio_000			<-- RGMII1_RX_CLK */
+			0x064 0x0000000f 0x00000001 /* gpio_001			<-- MII_TXEN_RGMII1_TXCTL */
+			0x064 0x000000f0 0x00000010 /* gpio_002			<-- RGMII1_RXD_00 */
+			0x064 0x00000f00 0x00000100 /* gpio_003			<-- RGMII1_RXD_01 */
+			0x064 0x0000f000 0x00001000 /* gpio_004			<-- RGMII1_RXD_02 */
+			0x064 0x000f0000 0x00010000 /* gpio_005			<-- RGMII1_RXD_03 */
+			0x064 0x00f00000 0x00100000 /* gpio_006			<-- RGMII1_TX_CLK */
+			0x064 0x0f000000 0x01000000 /* gpio_007			<-- MII_RXEN_RGMII1_RXCTL */
+			0x064 0xf0000000 0x10000000 /* gpio_008			<-- RGMII1_TXD_00 */
+			0x068 0x0000000f 0x00000001 /* gpio_009			<-- RGMII1_TXD_01 */
+			0x068 0x000000f0 0x00000010 /* gpio_010			<-- RGMII1_TXD_02 */
+			0x068 0x00000f00 0x00000100 /* gpio_011			<-- RGMII1_TXD_03 */
+			0x068 0x0000f000 0x00001000 /* gpio_012			<-- RGMII1_MDIO */
+			0x068 0x000f0000 0x00010000 /* gpio_013			<-- RGMII1_MDC */
+			0x08c 0x000f0000 0x00040000 /* gpio_085			<-- RGMII1_START_STOP */
+			0x08c 0x00f00000 0x00400000 /* gpio_086			<-- RGMII1_RX_OK */
+		>;
+	};
+};
+
+&vreg_wifi_pwr {
+	gpio = <&upg_gpio 80 0>;
+};
+
+&vreg_wifi_rf_pwr {
+	gpio = <&upg_gpio 79 0>;
+};
+
+&dqm {
+	fpm-alloc-offset = <0x1df0 0x1df0 0x1df0>;	/* bug in Ax requires write to prior reg */
+	qsm-size = <0x3000>;
+};

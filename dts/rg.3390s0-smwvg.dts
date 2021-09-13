@@ -1,0 +1,99 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (bcm93390s0smwvg)";
+	compatible = "brcm,bcm93390s0smwvg",
+		     "brcm,bcm3390s0",
+		     "brcm,bcm3390",
+		     "brcm,brcmcm", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <&gic>;
+
+	identifier@0 {
+			    /* chip id    mfg id     a/c pwr    don't park */
+		chipid_reg = < 0x20404000 0x204e6120 0x03800080 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000e000 0x00000008 0x00000001 >;
+		chipid_val = < 0x33900010 0x00006000 0x00000000 0x00000000 >;
+			     /* SMWVG2 */
+		boardid_msk = < 0xf0 >;
+		boardid_val = < 0xb0 >;
+	};
+};
+
+/include/ "rg.3390b0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+/include/ "rg.3390b0-moca.dtsi"
+/include/ "rg.3390-wifi.dtsi"
+/include/ "rg.3390s0-sgmii.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+&aon_pin_ctrl {
+	pinctrl-0 = <&mp8911_pins>;
+	mp8911_pins: mp8911_pins {
+		pinctrl-single,bits = <
+			0x008 0x00010000 0x000f0000 /* 1 = BSC_M0_SCL */
+			0x008 0x00100000 0x00f00000 /* 1 = BSC_M0_SDA */
+		>;
+	};
+};
+
+&suntop_pmx {
+	xcvr_off_pins: xcvr-off-pins {
+		pinctrl-single,bits = <
+		0x068 0x00000000 0x000f0000 /* gpio_013 <-- RGMII1_MDC */
+		0x068 0x00000000 0x0000f000 /* gpio_012 <-- RGMII1_MDIO */
+		>;
+	};
+
+	xcvr_on_pins: xcvr-on-pins {
+		pinctrl-single,bits = <
+		0x068 0x00010000 0x000f0000 /* gpio_013 --> RGMII1_MDC */
+		0x068 0x00001000 0x0000f000 /* gpio_012 --> RGMII1_MDIO */
+		>;
+	};
+};
+
+&ethsw {
+	phy-port-mask = <0x3>;
+	phy-handles = <&sw_p0_phy>,
+		      <&sw_p1_phy>;
+	led-map = <0x13>;
+	xcvr-power-supply = <&xcvr_power>;
+	xcvr-reset-gpio = <&upg_gpio 101 0>;
+	pinctrl-names = "xcvr_off", "xcvr_on";
+	pinctrl-0 = <&xcvr_off_pins>;
+	pinctrl-1 = <&xcvr_on_pins>;
+	xcvr-reset-duration = <2000>;
+};
+
+&switch_mdio {
+	/delete-property/sw_p2_phy;
+	/delete-property/sw_p3_phy;
+};
+
+/ {
+	/delete-node/ethernet2;
+	/delete-node/ethernet3;
+
+	xcvr_power: xcvr-power {
+		compatible = "regulator-fixed";
+		regulator-name = "xcvr-power";
+		regulator-min-microvolt = <0>;
+		regulator-max-microvolt = <0>;
+		gpio = <&upg_gpio 9 0>;
+		enable-active-high;
+	};
+
+	chosen {
+		filename = "rg.3390s0-smwvg.dtb";
+	};
+};

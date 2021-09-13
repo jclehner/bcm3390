@@ -1,0 +1,87 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (3390a2)";
+	compatible = "brcm,bcm3390a0", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <0x1>;
+
+	identifier {
+		/* register offset */
+		chipid_reg = < 0x20404000 0x204e6120 >;
+		chipid_msk = < 0xffffffff 0x0000e000 >;
+		chipid_val = < 0x33900000 0x0000e000 >;
+		boardid_msk = < 0xf0 >;
+		boardid_val = < 0x50 >;
+	};
+};
+
+/include/ "rg.3390a0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+/include/ "rg.3390a2-moca.dtsi"
+/include/ "rg.3390-wifi.dtsi"
+/include/ "rg.3390-ethwan.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+/ {
+	stb0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "stb0";
+		if-id = <7>;		/* rdpa_if_lan5 */
+		if-sub-id = <7>; /* if-sub-id is the switch port number */
+		demux = "subid";
+		link-type = "switch";
+		brcm-tag = <1>;
+	};
+};
+
+&miimdiomux {
+	rgmii0-tx-select = "unimac";
+	rgmii1-tx-select = "p7";
+	p7-rx-select = "rgmii1";
+	p4-rx-select = "moca";
+	unimac-rx-select = "rgmii0";
+	unimac-mdio-select = "none";
+	switch-mdio-select = "both";
+};
+
+&unimac_mdio {
+	compatible = "";
+};
+
+&switch_mdio {
+	ethwan_phy: phy@1 {	/* external bcm50212 */
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <1>;
+	};
+};
+
+&ethsw {
+	phy-port   = <0 2>,
+		     <1 3>,
+		     <2 4>,
+		     <3 5>;
+	mii-port   = <4 0 1000>,
+		     <7 0 1000>;
+	imp-port   = <5 2000>,
+		     <8 2000>;
+};
+
+&runner {
+	lag-ports = < 0 1 >;
+};
+
+&dqm {
+	fpm-alloc-offset = <0x1df0 0x1df0 0x1df0>;	/* bug in Ax requires write to prior reg */
+	qsm-size = <0x3000>;
+};

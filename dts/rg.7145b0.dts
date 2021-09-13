@@ -1,0 +1,1080 @@
+/*
+ * WARNING: THIS IS ONLY A PARTIAL DT!!!
+ * This is a partial, bare-metal (no hypervisor), RG-only DT containing only the RG-specific nodes.
+ * It is intended to be used with BOLT's DT_OFF=1 to completely replace the BOLT DT with one created
+ * by merging this partial DT with the DT that is in BOLT.
+ *
+ * To create a useable DT from this partial DT, use BOLT's "dt bolt" command to auto-generate all
+ * of the BOLT nodes, then "dt show" to obtain all of the BOLT DT. The output from "dt show"
+ * should be inserted where shown below and the RG-specific nodes from BOLT should be removed.
+ *
+ * The RG-specific nodes are:
+ * fpm, dqm, q-channel, ethernet, ethwan, ethport, ethsw, unimac, gfap
+ */
+
+/dts-v1/;
+
+/ {
+        #address-cells = <0x2>;
+        #size-cells = <0x2>;
+        model = "Broadcom STB (7145b0)";
+        compatible = "brcm,bcm7145b0", "brcm,brcmstb";
+        interrupt-parent = <&intc>;
+        subsystem = "rg";
+
+        chosen {
+        };
+
+        timer {
+                compatible = "arm,cortex-a15-timer",
+                             "arm,armv7-timer";
+                interrupts = <1 13 0x0f08>,
+                             <1 14 0x0f08>,
+                             <1 11 0x0f08>,
+                             <1 10 0x0f08>;
+        };
+
+        cpus {
+                #address-cells = <0x1>;
+                #size-cells = <0x0>;
+
+                cpu@0 {
+                        compatible = "brcm,brahma-b15", "arm,cortex-a15";
+                        device_type = "cpu";
+                        enable-method = "brcm,brahma-b15";
+                        reg = <0x0>;
+                };
+
+                cpu@1 {
+                        compatible = "brcm,brahma-b15", "arm,cortex-a15";
+                        device_type = "cpu";
+                        enable-method = "brcm,brahma-b15";
+                        reg = <0x1>;
+                };
+
+                cpu@2 {
+                        compatible = "brcm,brahma-b15", "arm,cortex-a15";
+                        device_type = "cpu";
+                        enable-method = "brcm,brahma-b15";
+                        reg = <0x2>;
+                };
+
+                cpu@3 {
+                        compatible = "brcm,brahma-b15", "arm,cortex-a15";
+                        device_type = "cpu";
+                        enable-method = "brcm,brahma-b15";
+                        reg = <0x3>;
+                };
+        };
+
+        reserved-memory {
+                #address-cells = <0x2>;
+                #size-cells = <0x2>;
+                ranges;
+
+                reserved-nodma@00000000 {
+                        reg = <0x0 0x0 0x0 0x1000>;
+                };
+        };
+
+        memory {
+                #address-cells = <1>;
+                #size-cells = <1>;
+                device_type = "memory";
+                reg = <0x0 0x00000000 0x0 0x40000000
+                        0x0 0x80000000 0x0 0x40000000>;
+
+                region_ba: region@10000000 {
+                        contiguous-region;
+                        reg = <0x10000000 0x0c400000>;
+                };
+
+                region_0: region@1c400000 {
+                        contiguous-region;
+                        reg = <0x1c400000 0x12c00000>;
+                };
+
+                region_1: region@30000000 {
+                        contiguous-region;
+                        reg = <0x30000000 0x10000000>;
+                };
+
+                region_2: region@80000000 {
+                        contiguous-region;
+                        reg = <0x80000000 0x40000000>;
+                };
+        };
+
+        cma-dev@0 {
+                #address-cells = <0>;
+                #size-cells = <0>;
+                compatible = "brcm,cma-plat-dev";
+                linux,contiguous-region = <&region_0>;
+        };
+
+        cma-dev@1 {
+                #address-cells = <0>;
+                #size-cells = <0>;
+                compatible = "brcm,cma-plat-dev";
+                linux,contiguous-region = <&region_1>;
+        };
+
+        cma-dev@2 {
+                #address-cells = <0>;
+                #size-cells = <0>;
+                compatible = "brcm,cma-plat-dev";
+                linux,contiguous-region = <&region_2>;
+        };
+
+        bolt {
+        };
+
+        intc: interrupt-controller@ffd00000 {
+                compatible = "arm,cortex-a15-gic";
+                interrupt-controller;
+                #interrupt-cells = <0x3>;
+                reg = <0x00 0xffd01000 0x00 0x1000>,
+                        <0x00 0xffd02000 0x00 0x2000>;
+                reg-names = "dist",
+                        "cpu";
+        };
+
+        reboot {
+                compatible = "brcm,brcmstb-reboot";
+                syscon = <&sun_top_ctrl 0x304 0x308>;
+        };
+
+        smpboot {
+                compatible = "brcm,brcmstb-smpboot";
+                syscon-cpu = <&cpu_biu_ctrl 0x88 0x178>;
+                syscon-cont = <&hif_continuation>;
+        };
+
+        pmu {
+                compatible = "arm,cortex-a15-pmu",
+                        "arm,cortex-a9-pmu";
+                interrupts = <0x0 0x85 0x4>,
+                        <0x0 0x86 0x4>,
+                        <0x0 0x87 0x4>,
+                        <0x0 0x88 0x4>;
+                interrupt-names = "cpu_pmuirq_0",
+                        "cpu_pmuirq_1",
+                        "cpu_pmuirq_2",
+                        "cpu_pmuirq_3";
+        };
+
+        nexus-wakeups {
+                interrupt-parent = <&aon_pm_l2_intc>;
+                interrupts = <0>,
+                        <1>,
+                        <2>,
+                        <5>,
+                        <12>;
+                interrupt-names = "cec",
+                        "irr",
+                        "kpd",
+                        "gpio",
+                        "xpt_pmu";
+        };
+
+        pcie@f1080000 {
+                reg = <0x0 0xf1080000 0x0 0x9310>;
+                interrupts = <0x0 0x0 0x4>;
+                compatible = "brcm,pci-plat-dev";
+                #address-cells = <3>;
+                #size-cells = <2>;
+                tot-num-pcie = <2>;
+                ranges = <0x02000000 0x00000000 0x00000000 0x00000000
+                        0xc0000000 0x00000000 0x08000000>;
+                #interrupt-cells = <1>;
+                interrupt-map-mask = <0xf800 0 0 7>;
+                interrupt-map = <0 0 0 1
+                        &intc 43 3 0
+                        0 0 2 &intc
+                        44 3 0 0
+                        0 3 &intc 45
+                        3 0 0 0
+                        4 &intc 46 3>;
+                interrupt-names = "pcie0_inta",
+                        "pcie0_intb",
+                        "pcie0_intc",
+                        "pcie0_intd";
+        };
+
+        pcie@f1090000 {
+                reg = <0x0 0xf1090000 0x0 0x9310>;
+                interrupts = <0x0 0x0 0x4>;
+                compatible = "brcm,pci-plat-dev";
+                #address-cells = <3>;
+                #size-cells = <2>;
+                tot-num-pcie = <2>;
+                ranges = <0x02000000 0x00000000 0x08000000 0x00000000
+                        0xc8000000 0x00000000 0x08000000>;
+                #interrupt-cells = <1>;
+                interrupt-map-mask = <0xf800 0 0 7>;
+                interrupt-map = <0 0 0 1
+                        &intc 50 3 0
+                        0 0 2 &intc
+                        51 3 0 0
+                        0 3 &intc 52
+                        3 0 0 0
+                        4 &intc 53 3>;
+                interrupt-names = "pcie1_inta",
+                        "pcie1_intb",
+                        "pcie1_intc",
+                        "pcie1_intd";
+        };
+
+        rdb {
+                #address-cells = <1>;
+                #size-cells = <1>;
+                compatible = "simple-bus";
+                ranges = <0x00000000 0x00 0x00000000 0xffffffff>;
+
+                uarta: serial@f040a900 {
+                        clock-frequency = <81000000>;
+                        compatible = "ns16550a";
+                        reg-io-width = <0x4>;
+                        reg-shift = <0x2>;
+                        reg = <0xf040a900 0x20>;
+                        interrupts = <0x0 0x4c 0x4>;
+                        interrupt-names = "upg_uart0";
+                };
+
+                uartb: serial@f040a940 {
+                        clock-frequency = <81000000>;
+                        compatible = "ns16550a";
+                        reg-io-width = <0x4>;
+                        reg-shift = <0x2>;
+                        reg = <0xf040a940 0x20>;
+                        interrupts = <0x0 0x4d 0x4>;
+                        interrupt-names = "upg_uart1";
+                };
+
+                uartc: serial@f040a980 {
+                        clock-frequency = <81000000>;
+                        compatible = "ns16550a";
+                        reg-io-width = <0x4>;
+                        reg-shift = <0x2>;
+                        reg = <0xf040a980 0x20>;
+                        interrupts = <0x0 0x4e 0x4>;
+                        interrupt-names = "upg_uart2";
+                };
+
+                usb@f1000200 {
+                        reg = <0xf1000200 0xb8>;
+                        #address-cells = <1>;
+                        #size-cells = <1>;
+                        compatible = "brcm,usb-instance";
+                        ioc = <1>;
+                        ipp = <1>;
+                        ranges;
+                        interrupts-extended = <&aon_pm_l2_intc 0xf>;
+
+                        ehci@f1000300 {
+                                compatible = "brcm,ehci-brcm";
+                                reg = <0xf1000300 0xa8>;
+                                interrupts = <0x0 0x51 0x0>;
+                                interrupt-names = "usb0_ehci_0";
+                        };
+
+                        ohci@f1000400 {
+                                compatible = "brcm,ohci-brcm";
+                                reg = <0xf1000400 0x58>;
+                                interrupts = <0x0 0x53 0x0>;
+                                interrupt-names = "usb0_ohci_0";
+                        };
+
+                        xhci@f1001000 {
+                                compatible = "xhci-platform";
+                                reg = <0xf1001000 0x8c8>;
+                                interrupts = <0x0 0x55 0x0>;
+                                interrupt-names = "usb0_xhci_0";
+                        };
+                };
+
+                usb@f1010200 {
+                        reg = <0xf1010200 0xb8>;
+                        #address-cells = <1>;
+                        #size-cells = <1>;
+                        compatible = "brcm,usb-instance";
+                        ioc = <1>;
+                        ipp = <1>;
+                        ranges;
+
+                        ehci@f1010300 {
+                                compatible = "brcm,ehci-brcm";
+                                reg = <0xf1010300 0xa8>;
+                                interrupts = <0x0 0x52 0x0>;
+                                interrupt-names = "usb1_ehci_0";
+                        };
+
+                        ohci@f1010400 {
+                                compatible = "brcm,ohci-brcm";
+                                reg = <0xf1010400 0x58>;
+                                interrupts = <0x0 0x54 0x0>;
+                                interrupt-names = "usb1_ohci_0";
+                        };
+
+                        xhci@f1011000 {
+                                compatible = "xhci-platform";
+                                reg = <0xf1011000 0x8c8>;
+                                interrupts = <0x0 0x56 0x0>;
+                                interrupt-names = "usb1_xhci_0";
+                        };
+                };
+
+                sata@f100a000 {
+                        #address-cells = <1>;
+                        #size-cells = <1>;
+                        compatible = "brcm,sata3-ahci";
+                        phy-enable-ssc-mask = <0>;
+                        phy-generation = <0x2800>;
+                        phy-names = "sata-phy";
+                        reg-names = "ahci",
+                                "top_ctrl";
+                        reg = <0xf100a000 0x99c 0xf1008040 0x24>;
+                        interrupts = <0x0 0x1a 0x0>;
+                        interrupt-names = "sata0_ahci";
+                        phy-base-addr = <0xf1008100>;
+                        top-ctrl-base-addr = <0xf1008040>;
+                        phys = <&sata_phy0>;
+
+                        sata_phy0: sata_phy {
+                                #phy-cells = <1>;
+                                compatible = "brcm,sata3-phy";
+                                reg = <0xf1008100 0x1f00>;
+                        };
+                };
+
+                sata@f101a000 {
+                        #address-cells = <1>;
+                        #size-cells = <1>;
+                        compatible = "brcm,sata3-ahci";
+                        phy-enable-ssc-mask = <0>;
+                        phy-generation = <0x2800>;
+                        phy-names = "sata-phy";
+                        reg-names = "ahci",
+                                "top_ctrl";
+                        reg = <0xf101a000 0x99c 0xf1018040 0x24>;
+                        interrupts = <0x0 0x1c 0x0>;
+                        interrupt-names = "sata1_ahci";
+                        phy-base-addr = <0xf1018100>;
+                        top-ctrl-base-addr = <0xf1018040>;
+                        phys = <&sata_phy1>;
+
+                        sata_phy1: sata_phy {
+                                #phy-cells = <1>;
+                                compatible = "brcm,sata3-phy";
+                                reg = <0xf1018100 0x1f00>;
+                        };
+                };
+
+                sdhci@f04a0100 {
+                        compatible = "brcm,sdhci-brcmstb";
+                        reg = <0xf04a0000 0x100 0xf04a0100 0x100>;
+                        reg-names = "host",
+                                "cfg";
+                        interrupts = <0x0 0x23 0x0>;
+                        interrupt-names = "sdio0_0";
+                };
+
+                sdhci@f04a0300 {
+                        compatible = "brcm,sdhci-brcmstb";
+                        reg = <0xf04a0200 0x100 0xf04a0300 0x100>;
+                        reg-names = "host",
+                                "cfg";
+                        interrupts = <0x0 0x24 0x0>;
+                        interrupt-names = "sdio1_0";
+                };
+
+                bmoca@f1200000 {
+                        compatible = "brcm,bmoca-instance";
+                        hw-rev = <0x2003>;
+                        interrupt-names = "moca";
+                        reg = <0xf1200000 0x1ffda0>;
+                        interrupts = <0x0 0x19 0x0>;
+                        interrupts-extended = <&intc 0x0 0x19 0x0>,
+                                <&aon_pm_l2_intc 0xe>;
+                };
+
+                cpupll: cpupll@0 {
+                        #clock-cells = <0>;
+                        clock-frequency = <1503000000>;
+                        compatible = "fixed-clock";
+                };
+
+                cpuclkdiv: cpu-clk-div@0 {
+                        #clock-cells = <0>;
+                        clocks = <&cpupll>;
+                        compatible = "brcm,brcmstb-cpu-clk-div";
+                        reg = <0xf04a257c 0x4>;
+                        div-table = <0x00 1 0x11 2
+                                0x12 4 0x13 8
+                                0x14 16>;
+                        div-shift-width = <0 5>;
+                };
+
+                sun_l2_intc: interrupt-controller@f0403000 {
+                        #interrupt-cells = <1>;
+                        compatible = "brcm,l2-intc";
+                        interrupt-names = "sys";
+                        interrupt-parent = <&intc>;
+                        reg = <0xf0403000 0x48>;
+                        interrupt-controller;
+                        interrupts = <0x0 0x3f 0x0>;
+                };
+
+                hif_intr2_intc: interrupt-controller@f04a1000 {
+                        #interrupt-cells = <1>;
+                        compatible = "brcm,l2-intc";
+                        interrupt-names = "hif";
+                        interrupt-parent = <&intc>;
+                        reg = <0xf04a1000 0x30>;
+                        interrupt-controller;
+                        interrupts = <0x0 0x1f 0x0>;
+                };
+
+                aon_pm_l2_intc: interrupt-controller@f0410640 {
+                        #interrupt-cells = <1>;
+                        compatible = "brcm,l2-intc";
+                        interrupt-names = "sys_pm";
+                        interrupt-parent = <&intc>;
+                        reg = <0xf0410640 0x30>;
+                        interrupt-controller;
+                        interrupts = <0x0 0x41 0x0>;
+                        brcm,irq-can-wake;
+                };
+
+                gisb-arb@f0400000 {
+                        compatible = "brcm,gisb-arb";
+                        interrupt-names = "gisb_timeout",
+                                "gisb_tea";
+                        interrupt-parent = <&sun_l2_intc>;
+                        reg = <0xf0400000 0x800>;
+                        interrupts = <0x0>,
+                                <0x2>;
+                        brcm,gisb-arb-master-mask = <0x19f9f43>;
+                        brcm,gisb-arb-master-names = "bsp_0",
+                                "scpu_0",
+                                "cpu_0",
+                                "jtag_0",
+                                "ssp_0",
+                                "rdc_0",
+                                "hvd_0",
+                                "hvd_1",
+                                "vice_0",
+                                "vice_1",
+                                "raaga_0",
+                                "raaga_1",
+                                "pcie_0",
+                                "pcie_1",
+                                "bbsi_spi",
+                                "rg_cpu_0";
+                };
+
+                waketimer@f0417480 {
+                        compatible = "brcm,brcmstb-waketimer";
+                        interrupt-names = "timer";
+                        interrupt-parent = <&aon_pm_l2_intc>;
+                        reg = <0xf0417480 0x14>;
+                        interrupts = <0x3>;
+                };
+
+                sram@ffe00000 {
+                        compatible = "brcm,boot-sram",
+                                "mmio-sram";
+                        reg = <0xffe00000 0x10000>;
+                };
+
+                aon-ctrl@f0410000 {
+                        compatible = "brcm,brcmstb-aon-ctrl";
+                        reg = <0xf0410000 0x200 0xf0410200 0x400>;
+                        reg-names = "aon-ctrl",
+                                "aon-sram";
+                };
+
+                memory_controllers {
+                        ranges;
+                        compatible = "simple-bus";
+                        #address-cells = <1>;
+                        #size-cells = <1>;
+
+                        memc@0 {
+                                #address-cells = <1>;
+                                #size-cells = <1>;
+                                compatible = "brcm,brcmstb-memc",
+                                        "simple-bus";
+                                ranges;
+
+                                ddr-phy@f1506000 {
+                                        compatible = "brcm,brcmstb-ddr-phy-v240.1";
+                                        reg = <0xf1506000 0x21c>;
+                                };
+
+                                shimphy@f1508000 {
+                                        compatible = "brcm,brcmstb-ddr-shimphy-v1.0";
+                                        reg = <0xf1508000 0xe4>;
+                                };
+
+                                memc-ddr@f1502000 {
+                                        compatible = "brcm,brcmstb-memc-ddr";
+                                        reg = <0xf1502000 0x800>;
+                                };
+                        };
+
+                        memc@1 {
+                                #address-cells = <1>;
+                                #size-cells = <1>;
+                                compatible = "brcm,brcmstb-memc",
+                                        "simple-bus";
+                                ranges;
+
+                                ddr-phy@f1586000 {
+                                        compatible = "brcm,brcmstb-ddr-phy-v240.1";
+                                        reg = <0xf1586000 0x21c>;
+                                };
+
+                                shimphy@f1588000 {
+                                        compatible = "brcm,brcmstb-ddr-shimphy-v1.0";
+                                        reg = <0xf1588000 0xe4>;
+                                };
+
+                                memc-ddr@f1582000 {
+                                        compatible = "brcm,brcmstb-memc-ddr";
+                                        reg = <0xf1582000 0x800>;
+                                };
+                        };
+                };
+
+                spi@f04a3400 {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+                        compatible = "brcm,spi-brcmstb";
+                        interrupt-names = "hif_spi";
+                        status = "disabled";
+                        reg = <0xf04a3400 0x188 0xf04a3200 0x50
+                                0xf04a3300 0x24>;
+                        reg-names = "hif_mspi",
+                                "bspi",
+                                "bspi_raf";
+                        interrupts = <0x0 0x20 0x0>;
+                };
+
+                nand@f04a2800 {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+                        compatible = "brcm,brcmnand-v7.1",
+                                "brcm,brcmnand";
+                        reg-names = "nand",
+                                "flash-dma";
+                        status = "disabled";
+                        reg = <0xf04a2800 0x600 0xf04a3000 0x2c>;
+                        interrupt-parent = <&hif_intr2_intc>;
+                        interrupts = <24>,
+                                <4>;
+                        interrupt-names = "nand_ctlrdy",
+                                "flash_dma_done";
+                };
+
+                rf4ce_controller: rf4ce@f0e00000 {
+                        #address-cells = <1>;
+                        #size-cells = <1>;
+                        compatible = "brcm,rf4ce-v0",
+                                "brcm,rf4ce";
+                        reg = <0xf0e00000 0x80a30>;
+                        interrupt-names = "rf4ce",
+                                "rf4ce_aon";
+                        interrupts-extended = <&intc 0x0 0x83 0x0>,
+                                <&aon_pm_l2_intc 0x6>;
+                };
+
+                sun_top_ctrl: syscon@f0404000 {
+                        compatible = "brcm,brcmstb-sun-top-ctrl",
+                                "syscon";
+                        reg = <0xf0404000 0x528>;
+                };
+
+                cpu_biu_ctrl: syscon@f04a2400 {
+                        compatible = "brcm,brcmstb-cpu-biu-ctrl",
+                                "syscon";
+                        reg = <0xf04a2400 0x400>;
+                };
+
+                hif_continuation: syscon@f0450000 {
+                        compatible = "brcm,brcmstb-hif-continuation",
+                                "syscon";
+                        reg = <0xf0450000 0x100>;
+                };
+
+                sun_top_ctrl_pin_mux_ctrl: syscon@f0404100 {
+                        compatible = "brcm,brcmstb-sun-top-ctrl-pin-mux-ctrl",
+                                "syscon";
+                        reg = <0xf0404100 0x40>;
+                };
+
+                sun_top_ctrl_pin_mux_pad_ctrl: syscon@f0404140 {
+                        compatible = "brcm,brcmstb-sun-top-ctrl-pin-mux-pad-ctrl",
+                                "syscon";
+                        reg = <0xf0404140 0x28>;
+                };
+
+                aon_pin_ctrl_pin_mux_ctrl: syscon@f0410700 {
+                        compatible = "brcm,brcmstb-aon-pin-ctrl-pin-mux-ctrl",
+                                "syscon";
+                        reg = <0xf0410700 0xc>;
+                };
+
+                aon_pin_ctrl_pad_mux_ctrl: syscon@f041070c {
+                        compatible = "brcm,brcmstb-aon-pin-ctrl-pad-mux-ctrl",
+                                "syscon";
+                        reg = <0xf041070c 0xc>;
+                };
+
+                memc_arb_0_client_info: syscon@f1501004 {
+                        compatible = "brcm,brcmstb-memc-arb-0-client-info",
+                                "syscon";
+                        reg = <0xf1501004 0x400>;
+                };
+
+                memc_arb_1_client_info: syscon@f1581004 {
+                        compatible = "brcm,brcmstb-memc-arb-1-client-info",
+                                "syscon";
+                        reg = <0xf1581004 0x400>;
+                };
+
+                sun_top_ctrl_general_ctrl_0: syscon@f0404080 {
+                        compatible = "brcm,brcmstb-sun-top-ctrl-general-ctrl-0",
+                                "syscon";
+                        reg = <0xf0404080 0x4>;
+                };
+
+                sdio_0_cfg_sd_pin_sel: syscon@f04a0154 {
+                        compatible = "brcm,brcmstb-sdio-0-cfg-sd-pin-sel",
+                                "syscon";
+                        reg = <0xf04a0154 0x4>;
+                };
+
+                sdio_1_cfg_sd_pin_sel: syscon@f04a0354 {
+                        compatible = "brcm,brcmstb-sdio-1-cfg-sd-pin-sel",
+                                "syscon";
+                        reg = <0xf04a0354 0x4>;
+                };
+
+                sdio_1_boot_main_ctl: syscon@f04a0400 {
+                        compatible = "brcm,brcmstb-sdio-1-boot-main-ctl",
+                                "syscon";
+                        reg = <0xf04a0400 0x4>;
+                };
+
+                irq0_intc: interrupt-controller@f040a800 {
+                        #interrupt-cells = <1>;
+                        compatible = "brcm,bcm7120-l2-intc";
+                        interrupt-parent = <&intc>;
+                        reg = <0xf040a800 0x8>;
+                        interrupt-controller;
+                        interrupts = <0x0 0x46 0x0>,
+                                <0x0 0x44 0x0>;
+                        interrupt-names = "upg_main",
+                                "upg_bsc";
+                        brcm,int-map-mask = <0x7b8>,
+                                <0x40>;
+                        brcm,int-fwd-mask = <0x7>;
+                };
+
+                irq0_aon_intc: interrupt-controller@f0417200 {
+                        #interrupt-cells = <1>;
+                        compatible = "brcm,bcm7120-l2-intc";
+                        interrupt-parent = <&intc>;
+                        reg = <0xf0417200 0x8>;
+                        interrupt-controller;
+                        interrupts = <0x0 0x47 0x0>,
+                                <0x0 0x45 0x0>,
+                                <0x0 0x4a 0x0>;
+                        interrupt-names = "upg_main_aon",
+                                "upg_bsc_aon",
+                                "upg_spi";
+                        brcm,int-map-mask = <0xb7>,
+                                <0x8>,
+                                <0x40>;
+                        brcm,int-fwd-mask = <0x0>;
+                        brcm,irq-can-wake;
+                };
+        };
+
+        aliases {
+                serial0 = &uarta;
+                serial1 = &uartb;
+                serial2 = &uartc;
+                sata_phy0 = &sata_phy0;
+                sata_phy1 = &sata_phy1;
+                cpuclkdiv0 = &cpuclkdiv;
+        };
+
+        s3 {
+                syscon-refs = <&sun_top_ctrl_pin_mux_ctrl>,
+                        <&sun_top_ctrl_pin_mux_pad_ctrl>,
+                        <&aon_pin_ctrl_pin_mux_ctrl>,
+                        <&aon_pin_ctrl_pad_mux_ctrl>,
+                        <&memc_arb_0_client_info>,
+                        <&memc_arb_1_client_info>,
+                        <&sun_top_ctrl_general_ctrl_0>,
+                        <&sdio_0_cfg_sd_pin_sel>,
+                        <&sdio_1_cfg_sd_pin_sel>,
+                        <&sdio_1_boot_main_ctl>;
+        };
+
+
+	/********************************************************/
+	/* INSERT BOLT DT HERE, EXCLUDING THE RG_SPECIFIC NODES */
+	/********************************************************/
+
+       brcm-mbox {
+		compatible = "brcm,brcm-mbox";
+		reg = <0x00 0xd38f0080 0x00 0x80>, //MBOX_CPUC
+		      <0x00 0xd38f0000 0x00 0x80>; //CPU_COMM_REGS_CPUC
+		interrupts = <0 128 0x4>;
+		read = < 0x0000011F >; /* 0,1,2,3,4,8 */
+		write = < 0x000001E4 >; /* 2, 5, 6, 7, 8 */
+	};
+
+        //Boot Assist
+        boot-assist {
+		compatible = "brcm,brcm-ba";
+		brcm-resrv;
+		allow-user-map;
+                version = < 0x00020000 >;
+                reg = <0x0 0x04000000 0x0 0x5600000>, //Memory Region
+                      <0x0 0xd38f0000 0x0 0x80>, //CPU_COMM_REGS_CPUC
+                      <0x0 0xf1509800 0x0 0x1E4>, //MEMC_ATW_UBUS_0
+                      <0x0 0xd3881000 0x0 0x50>, //RG_TOP_CTRL
+                      <0x0 0xd3880000 0x0 0x374>, //CM_TOP_CTRL
+                      <0x0 0xf0410000 0x0 0x600>, //AON_CTRL
+                      <0x0 0xf1500c00 0x0 0x378>, //MEMC_ARC_0
+                      <0x0 0x0 0x0 0x0>, //NA for B0
+                      <0x0 0xd3890158 0x0 0x4>, //JTAG_OTP_UB:STATUS_17
+                      <0x0 0xd2100000 0x0 0x300>; //LEAP_CTRL: Control registers
+                stb = < 0xFFFFFFFF 0 0 0 0 >; //start, size, # cpu, priority, latency
+                rg = < 0xFFFFFFFF 0 0 0 0 >; //start, size, # cpu, priority, latency
+                tp1 = < 0x08000000 0x1400000 >; //start, size
+                cm_xfer = < 0x09410000 0x20000 0x2 >; //start, size, count
+                leap = < 0x07F00000 0x100000>; //start, size
+                cm_atw = < 0x0 0x04000000 0x4000000 0x0 0x4000fffa 0x0 0x0 0x0 >; //index, start, size, destination, client0-3
+                cm_dsp_atw = < 0x1 0x08000000 0x200000 0x7e00000 0x4000fffa 0x0 0x0 0x0 >; //index, start, size, destination, client0-3
+                cm_boot_atw = < 0x2 0x09400000 0x10000 0x1fc00000 0x2 0x0 0x0 0x0 >; //index, start, size, destination, client0-3
+        };
+
+	fpm@0xd3a00000 {
+		compatible = "brcm,fpm";
+		brcm-resrv;
+		reg = <0x00 0x09600000 0x00 0x2000000 >,	/* Free Pool 0	*/
+		      <0x00 0xd3a00000 0x00 0x20000 >;		/* Registers	*/
+		init = <1>;
+	};
+
+	dqm@d38f0000 {
+		compatible = "brcm,dqm";
+		reg = <0x00 0xd38f0000 0x00 0x8000>;
+		interrupts = <0 128 0>;
+
+		dev-name = "cpucomm";
+
+		l1-irq-mask-offset	= <0x0058>;
+		l1-irq-status-offset	= <0x005c>;
+		l1-irq-dqm-mask		= <0x00400000>;
+
+		cfg-offset		= <0x0380>;
+		lwm-irq-mask-offset	= <0x0390>;
+		lwm-irq-status-offset	= <0x03a0>;
+		ne-irq-mask-offset	= <0x03d0>;
+		ne-irq-status-offset	= <0x03e0>;
+		ne-status-offset	= <0x03e8>;
+		q-ctl-base-offset	= <0x0400>;
+		q-data-base-offset	= <0x0800>;
+		q-status-base-offset	= <0x0b00>;
+		q-mib-base-offset       = <0x0c00>;
+
+		q-word-count		= <4>;
+		q-count			= <32>;
+		cfg-qsm			= <1>;
+		qsm-size		= <0x1000>;
+		qsm-allocation		= < 4  8
+					    4  8
+					    4  8
+					    4  8
+					    2  16
+					    2  16
+					    4  8
+					    4  8
+					    4  8
+					    4  8
+					    2  16
+					    2  16
+					    2  16
+					    2  16
+					    2  16
+					    2  16
+					    2  16
+					    2  16
+					    2  16
+					    2  16
+					    4  8
+					    4  8
+					    4  8
+					    4  8
+					    4  8
+					    4  8 >;
+	};
+
+	dqm@d4200000 {
+		compatible = "brcm,dqm";
+		reg = <0x00 0xd4200000 0x00 0x200000>;
+		interrupts = <0 123 0>;
+
+		dev-name = "gfap";
+
+		l1-irq-mask-offset	= <0x1008>;
+		l1-irq-status-offset	= <0x100c>;
+		l1-irq-dqm-mask		= <0x00000008 0x02000000>;
+
+		cfg-offset		= <0x1800 0x2200>;
+		lwm-irq-mask-offset	= <0x1808 0x2208>;
+		lwm-irq-status-offset	= <0x180c 0x220c>;
+		ne-irq-mask-offset	= <0x1814 0x2214>;
+		ne-irq-status-offset	= <0x1818 0x2218>;
+		ne-status-offset	= <0x1820 0x2220>;
+
+		q-ctl-base-offset	= <0x1a00 0x2400>;
+		q-data-base-offset	= <0x1c00 0x2600>;
+		q-status-base-offset	= <0x1f00 0x2900>;
+		q-mib-base-offset       = <0x2000 0x2a00>;
+
+		q-word-count		= <4>;
+		q-count			= <64>;
+		cfg-qsm			= <0>;
+		qsm-size		= <0x3000>;
+	};
+
+	rpcrgcm: rpcrgcm {
+		compatible = "brcm,itc-rpc";
+		dev-name = "rg-cm";
+		dqm = "cpucomm";
+		tx-q = <2>;
+		rx-q = <3>;
+	};
+
+	rpcsvmcm: rpcsvmcm {
+		compatible = "brcm,itc-rpc";
+		dev-name = "svm-cm";
+		dqm = "cpucomm";
+		tx-q = <20>;
+		rx-q = <21>;
+	};
+
+	rpcstbcm: rpcstbcm {
+		compatible = "brcm,itc-rpc";
+		dev-name = "stb-cm";
+		dqm = "cpucomm";
+		tx-q = <6>;
+		rx-q = <7>;
+	};
+
+	qchan0: q-channel0 {
+		dev-name = "fap-exception";
+
+		#tx-q-cells = <3>;
+		/*	DQM device,	Q#,	Priority				*/
+		tx-q =	"gfap",		"12",	"0",	/* RG-->GFAP, hi priority	*/
+			"gfap",		"13",	"1";	/* RG-->GFAP, lo priority	*/
+		#rx-q-cells = <3>;
+		/*	DQM device,	Q#,	Priority				*/
+		rx-q =	"gfap",		"27",	"0",	/* GFAP-->RG, hi priority	*/
+			"gfap",		"26",	"1";	/* GFAP-->RG, lo priority	*/
+
+		type = "fap-exception";
+		q-msg-fmt = "gfap";
+	};
+
+	qchan1: q-channel1 {
+		dev-name = "cm-private";
+
+		#tx-q-cells = <3>;
+		/*	DQM device,	Q#,	Priority	US/DS				*/
+		tx-q =	"cpucomm",	"14",	"0";				/* RG-->CM	*/
+		#rx-q-cells = <3>;
+		/*	DQM device,	Q#,	Priority					*/
+		rx-q =	"cpucomm",	"15",	"0";				/* CM-->RG	*/
+
+		type = "point-to-point";
+		q-msg-fmt = "gfap";
+	};
+
+	priv0 { /* RG <--> CM private */
+		compatible = "brcm,dqnet";
+		channel = <&qchan1>;
+		dev-name = "priv0";
+		demux = "none";
+		link-type = "rpc";
+		rpc-channel = <&rpcrgcm>;
+	};
+
+	eth0: ethernet0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth0";
+		if-id = <0>;
+		if-sub-id = <0>; /* if-sub-id must match the first column in phy-port node */
+		demux = "arl";
+		link-type = "switch";
+	};
+
+	eth1: ethernet1 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth1";
+		if-id = <0>;
+		if-sub-id = <1>; /* if-sub-id must match the first column in phy-port node */
+		demux = "arl";
+		link-type = "switch";
+	};
+
+	eth2: ethernet2 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth2";
+		if-id = <0>;
+		if-sub-id = <2>; /* if-sub-id must match the first column in phy-port node */
+		demux = "arl";
+		link-type = "switch";
+	};
+
+	eth3: ethernet3 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth3";
+		if-id = <0>;
+		if-sub-id = <3>; /* if-sub-id must match the first column in phy-port node */
+		demux = "arl";
+		link-type = "switch";
+	};
+
+	moca0: moca0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "moca0"; /* moca[0-based MAC index] */
+		if-id = <0>;
+		if-sub-id = <7>;
+		demux = "arl";
+		link-type = "switch";
+	};
+
+	cm0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "cm0"; /* cm[0-based index] */
+		if-id = <15>;
+		if-sub-id = <0>;
+		demux = "subid";
+		link-type = "rpc";
+		rpc-channel = <&rpcrgcm>;
+	};
+
+	ethwan0: ethwan0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "ethwan0";
+		if-id = <1>;
+		if-sub-id = <0>;
+		demux = "subid";
+		link-type = "ethport";
+	};
+
+	ethport0 {
+		compatible = "brcm,ethport";
+		dev-name   = "ethport0";
+		mac-type   = "unimac";
+		mac-dev    = <&unimac_stb>;
+		phy-type   = "ext-rgmii";
+		phy-id     = <1>;
+		netdev-dev = <&ethwan0>;
+	};
+
+	ethsw@d4e00000 {
+		compatible = "brcm,ethsw";
+		reg        = <0x0 0xd4e00000 0x0 0x42000>;
+		interrupts = <0x0 0x71 0x0>,
+			     <0x0 0x72 0x0>;
+
+		dev-name   = "ethsw";
+		phy-port   = <0 1>,
+			     <1 2>,
+			     <2 3>,
+			     <3 4>;
+		mii-port   = <7 0 1000>;
+		imp-port   = <5 2000>,
+			     <8 2000>;
+
+		netdev-map = <0 &eth0>,
+			     <1 &eth1>,
+			     <2 &eth2>,
+			     <3 &eth3>;
+	};
+
+	unimac@d4800000 {
+		compatible = "brcm,unimac";
+		reg = <0x0 0xd4800000 0x0 0x20000>;
+		mbdma_reg_offset = <0x0>;
+		unimac_reg_offset = <0x600>;
+		mdio_reg_offset = <0x62c>;
+		id_string = "unimac0";
+		mbdma_use_scb = <1>;
+		mbdma_burst_size = <128>; /* B0 bug limits SCB max burst */
+	};
+
+	unimac@d4a00000 {
+		compatible = "brcm,unimac";
+		reg = <0x0 0xd4a00000 0x0 0x20000>;
+		mbdma_reg_offset = <0x0>;
+		unimac_reg_offset = <0x600>;
+		mdio_reg_offset = <0x62c>;
+		id_string = "unimac1";
+		mbdma_use_scb = <1>;
+		mbdma_burst_size = <128>; /* B0 bug limits SCB max burst */
+	};
+
+	unimac_stb: unimac@d4c00000 {
+		compatible = "brcm,unimac";
+		reg = <0x0 0xd4c00000 0x0 0x20000>;
+		interrupts = <0x0 0x73 0x0>,
+			     <0x0 0x74 0x0>;
+		mbdma_reg_offset = <0x0>;
+		unimac_reg_offset = <0x600>;
+		mdio_reg_offset = <0x62c>;
+		id_string = "unimac2";
+		mbdma_use_scb = <1>;
+		mbdma_burst_size = <128>; /* B0 bug limits SCB max burst */
+		external_phy = <1>;
+	};
+
+	gfap@d4200000 {
+		compatible = "brcm,gfap";
+		reg = <0x0 0xd4200000 0x0 0x200000>;
+		id_string = "gfap";
+		gfap_use_scb = <1>;
+	};
+
+
+	bmoca@0xf1200000 {
+		compatible = "brcm,bmoca-instance";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		chip-id = <0x714500b0>;
+		reg = <0x0 0xf1200000 0x0 0x1ffda0>;
+		interrupts = <0 0x19 0>;
+		hw-rev = <0x2003>;
+		rf-band = <0>;
+		enet-id = <1>;
+		mac-address = [ 00 10 18 85 71 45 ];
+	};
+
+};

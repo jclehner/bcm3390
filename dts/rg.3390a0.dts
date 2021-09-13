@@ -1,0 +1,117 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (3390a0)";
+	compatible = "brcm,bcm3390a0", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <0x1>;
+
+	identifier {
+		/* register offset */
+		chipid_reg = < 0x20404000 0x204e6120 >;
+		chipid_msk = < 0xffffffff 0x0000f000 >;
+		chipid_val = < 0x33900000 0x00000000 >;
+		boardid_msk = < 0xf0 0xf0 >;
+		boardid_val = < 0x20 0x30 >;
+	};
+};
+
+/include/ "rg.3390a0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+/include/ "rg.3390a2-moca.dtsi"
+/include/ "rg.3390-wifi.dtsi"
+/include/ "rg.3390-ethwan.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+&switch_mdio {
+	ethwan_phy: phy@1 {	/* external bcm54210 */
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <1>;
+	};
+};
+
+&suntop_pmx {
+	pinctrl-0 = <&ethwan_pins>;
+	ethwan_pins: ethwan_pins {
+		pinctrl-single,bits = <
+			0x000 0x00000020 0x00000000 /* RGMII1 pad amp		<-- disable */
+			0x000 0x00000010 0x00000000 /* RGMII1 pad sel gmii	<-- HV CMOS/RGMII25 */
+			0x000 0x00000008 0x00000008 /* RGMII1 pad modehv	<-- HV CMOS/RGMII25/GMII33 */
+			0x000 0x00000007 0x00000007 /* RGMII1 pad sel		<-- DRIVE_16MA */
+			0x060 0xf0000000 0x10000000 /* gpio_000			<-- RGMII1_RX_CLK */
+			0x064 0x0000000f 0x00000001 /* gpio_001			<-- MII_TXEN_RGMII1_TXCTL */
+			0x064 0x000000f0 0x00000010 /* gpio_002			<-- RGMII1_RXD_00 */
+			0x064 0x00000f00 0x00000100 /* gpio_003			<-- RGMII1_RXD_01 */
+			0x064 0x0000f000 0x00001000 /* gpio_004			<-- RGMII1_RXD_02 */
+			0x064 0x000f0000 0x00010000 /* gpio_005			<-- RGMII1_RXD_03 */
+			0x064 0x00f00000 0x00100000 /* gpio_006			<-- RGMII1_TX_CLK */
+			0x064 0x0f000000 0x01000000 /* gpio_007			<-- MII_RXEN_RGMII1_RXCTL */
+			0x064 0xf0000000 0x10000000 /* gpio_008			<-- RGMII1_TXD_00 */
+			0x068 0x0000000f 0x00000001 /* gpio_009			<-- RGMII1_TXD_01 */
+			0x068 0x000000f0 0x00000010 /* gpio_010			<-- RGMII1_TXD_02 */
+			0x068 0x00000f00 0x00000100 /* gpio_011			<-- RGMII1_TXD_03 */
+			0x068 0x0000f000 0x00001000 /* gpio_012			<-- RGMII1_MDIO */
+			0x068 0x000f0000 0x00010000 /* gpio_013			<-- RGMII1_MDC */
+			0x08c 0x000f0000 0x00040000 /* gpio_085			<-- RGMII1_START_STOP */
+			0x08c 0x00f00000 0x00400000 /* gpio_086			<-- RGMII1_RX_OK */
+		>;
+	};
+};
+
+&dqm {
+	fpm-alloc-offset = <0x1df0 0x1df0 0x1df0>;	/* bug in Ax requires write to prior reg */
+	qsm-size = <0x3000>;
+
+	/* For A0 chip */
+	/* set all Q's to offload due to chip bug in A0 where non-offload doesn't work */
+	/* do not use 3rd bank (Q #'s 64-95) due to chip bug in some A0 mask and other register reads & writes */
+	/* limit all Q's so that offload will not occur due to chip bug in A0 */
+	/* Q #, # words/element, # elements (depth), offload(1)/non-offload(0) */
+	qsm-allocation = < 2	4  7	 1		/* RPC RG-->CM				*/
+			   3	4  7	 1		/* RPC RG<--CM				*/
+			   6	4  7	 1		/* RPC STB-->CM				*/
+			   7	4  7	 1		/* RPC STB<--CM				*/
+			   8	4  7	 1		/* RPC DECT-->CM			*/
+			   9	4  7	 1		/* RPC DECT<--CM			*/
+			   10	2  15	 1		/* Private Network DECT-->CM		*/
+			   11	2  15	 1		/* Private Network DECT<--CM		*/
+			   14	2  15	 1		/* Private Network RG (bridge)-->CM	*/
+			   15	2  15	 1		/* Private Network RG (bridge)<--CM	*/
+			   20	4  7	 1		/* RPC SVM-->CM				*/
+			   21	4  7	 1		/* RPC SVM<--CM				*/
+			   32	2  15	 1		/* RG DS Forward	(RG-->Runner)	*/
+			   33	2  15	 1		/* WiFi US Forward	(WiFi-->Runner)	*/
+			   34	2  15	 1		/* RG DS Egress		(RG-->Runner)	*/
+			   35	2  15	 1		/* RG US Egress		(RG-->Runner)	*/
+			   36	2  15	 1		/* STB DS Forward	(STB-->Runner)	*/
+			   37	2  15	 1		/* STB US Forward	(STB-->Runner)	*/
+			   38	2  15	 1		/* STB DS Egress	(STB-->Runner)	*/
+			   39	2  15	 1		/* STB US Egress	(STB-->Runner)	*/
+			   40	2  15	 1		/* DFAP DS Forward	(DFAP-->Runner)	*/
+			   41	2  15	 1		/* DFAP US Forward	(DFAP-->Runner)	*/
+			   42	2  15	 1		/* DFAP DS Egress	(DFAP-->Runner)	*/
+			   43	2  15	 1		/* DFAP US Egress	(DFAP-->Runner)	*/
+			   44	2  15	 1		/* Viper DS Forward	(DFAP-->Runner)	*/
+			   45	2  15	 1		/* Viper US Forward	(DFAP-->Runner)	*/
+			   46	2  15	 1		/* Viper DS Egress	(DFAP-->Runner)	*/
+			   47	2  15	 1		/* Viper US Egress	(DFAP-->Runner)	*/
+			   48	4  7	 1		/* RG Exception 0	(Runner-->RG)	*/
+			   49	4  7	 1		/* RG Exception 1	(Runner-->RG)	*/
+			   50	4  7	 1		/* RG Exception 2	(Runner-->RG)	*/
+			   51	4  7	 1		/* RG Exception 3	(Runner-->RG)	*/
+			   52	4  7	 1		/* RG Exception 4	(Runner-->RG)	*/
+			   53	4  7	 1		/* RG Exception 5	(Runner-->RG)	*/
+			   54	4  7	 1		/* RG Exception 6	(Runner-->RG)	*/
+			   55	4  7	 1		/* RG Exception 7	(Runner-->RG)	*/
+			   56	4  7	 1		/* WiFi 0 Rx		(Runner-->WiFi)	*/
+			   57	4  7	 1 >;		/* WiFi 1 Rx		(Runner-->WiFi)	*/
+};

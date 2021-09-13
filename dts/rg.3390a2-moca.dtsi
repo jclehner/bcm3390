@@ -1,0 +1,25 @@
+/{
+	moca0: moca0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "moca0";
+		if-id = <6>;		/* rdpa_if_lan4 */
+		if-sub-id = <4>; /* if-sub-id must match the first column in phy-port node */
+		demux = "subid";
+		link-type = "switch";
+		brcm-tag = <1>;
+	};
+
+	bmoca@0xf1200000 {
+		compatible = "brcm,bmoca-instance";
+		hw-rev = <0x2003>;
+		chip-id = <0x339000a0>;
+		interrupt-names = "moca";
+		reg = <0x0 0xf1200000 0x0 0x1ffda0>;
+		interrupts = <0x0 0x19 0x0>;
+		interrupts-extended = <0x1 0x0 0x19 0x0 0x5 0xe>;
+		rf-band = "d_high";
+		enet-id = <1>;
+		mac-address = [ 00 10 18 33 90 a0 ];
+	};
+};

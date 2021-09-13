@@ -1,0 +1,211 @@
+/ {
+	rdb {
+		brcmstb-clks {
+			osc_moca: osc_moca@f0410074 {
+				compatible = "brcm,brcmstb-gate-clk";
+				#clock-cells = <0x0>;
+				reg = <0xf0410074 0x4>;
+				bit-shift = <0x4>;
+				set-bit-to-disable;
+			};
+
+			moca_pwrdn_req: moca_pwrdn_req@f0480268 {
+				compatible = "brcm,brcmstb-gate-clk";
+				#clock-cells = <0x0>;
+				reg = <0xf0480268 0x4>;
+				bit-shift = <0x8>;
+				set-bit-to-disable;
+				brcm,delay = <0x1e 0>;
+				brcm,inhibit-disable;
+				brcm,read-only;
+				clocks = <&fixed5>;
+				clock-names = "fixed5";
+			};
+
+			mocamac_54: mocamac_54@f0480368 {
+				compatible = "brcm,brcmstb-gate-clk";
+				#clock-cells = <0x0>;
+				reg = <0xf0480368 0x4>;
+				bit-shift = <0x0>;
+			};
+
+			mocamac_gisb: mocamac_gisb@f0480368 {
+				compatible = "brcm,brcmstb-gate-clk";
+				#clock-cells = <0x0>;
+				reg = <0xf0480368 0x4>;
+				bit-shift = <0x1>;
+			};
+
+			mocamac_scb: mocamac_scb@f0480368 {
+				compatible = "brcm,brcmstb-gate-clk";
+				#clock-cells = <0x0>;
+				reg = <0xf0480368 0x4>;
+				bit-shift = <0x2>;
+			};
+
+			mocaphy_54: mocaphy_54@f0480374 {
+				compatible = "brcm,brcmstb-gate-clk";
+				#clock-cells = <0x0>;
+				reg = <0xf0480374 0x4>;
+				bit-shift = <0x0>;
+			};
+
+			moca_pdiv: moca_pdiv@f048017c {
+				compatible = "divider-clock";
+				#clock-cells = <0x0>;
+				reg = <0xf048017c 0x4>;
+				bit-shift = <0xa>;
+				bit-mask = <0xf>;
+				index-starts-at-one;
+				clocks = <&moca_pwrdn_req>;
+				clock-names = "moca_pwrdn_req";
+			};
+
+			moca_ndiv_int: moca_ndiv_int {
+				compatible = "multiplier-clock", "fixed-factor-clock";
+				#clock-cells = <0x0>;
+				reg = <0xf048017c 0x4>;
+				bit-shift = <0x0>;
+				bit-mask = <0x3ff>;
+				index-max-mult-at-zero;
+				clock-div = <0x1>;
+				clock-mult = <0xc8>;
+				clocks = <&moca_pdiv>;
+				clock-names = "moca_pdiv";
+			};
+
+			moca_mdiv_ch0: sw_moca_cpu: moca_mdiv_ch0@f048016c {
+				compatible = "divider-clock";
+				#clock-cells = <0x0>;
+				reg = <0xf048016c 0x4>;
+				bit-shift = <0x1>;
+				bit-mask = <0xff>;
+				index-starts-at-one;
+				clocks = <&moca_ndiv_int>;
+				clock-names = "moca_ndiv_int";
+			};
+
+			moca_dis_ch0: moca_dis_ch0@f048016c {
+				compatible = "brcm,brcmstb-gate-clk";
+				#clock-cells = <0x0>;
+				reg = <0xf048016c 0x4>;
+				bit-shift = <0x0>;
+				set-bit-to-disable;
+				clocks = <&moca_mdiv_ch0>;
+				clock-names = "moca_mdiv_ch0";
+			};
+
+			moca_pdh_ch0: moca_pdh_ch0@f048016c {
+				compatible = "brcm,brcmstb-gate-clk";
+				#clock-cells = <0x0>;
+				reg = <0xf048016c 0x4>;
+				bit-shift = <0xa>;
+				set-bit-to-disable;
+				clocks = <&moca_dis_ch0>;
+				clock-names = "moca_dis_ch0";
+			};
+
+			moca_mdiv_ch1: sw_moca_phy: moca_mdiv_ch1@f0480170 {
+				compatible = "divider-clock";
+				#clock-cells = <0x0>;
+				reg = <0xf0480170 0x4>;
+				bit-shift = <0x1>;
+				bit-mask = <0xff>;
+				index-starts-at-one;
+				clocks = <&moca_ndiv_int>;
+				clock-names = "moca_ndiv_int";
+			};
+
+			moca_dis_ch1: moca_dis_ch1@f0480170 {
+				compatible = "brcm,brcmstb-gate-clk";
+				#clock-cells = <0x0>;
+				reg = <0xf0480170 0x4>;
+				bit-shift = <0x0>;
+				set-bit-to-disable;
+				clocks = <&moca_mdiv_ch1>;
+				clock-names = "moca_mdiv_ch1";
+			};
+
+			moca_pdh_ch1: moca_pdh_ch1@f0480170 {
+				compatible = "brcm,brcmstb-gate-clk";
+				#clock-cells = <0x0>;
+				reg = <0xf0480170 0x4>;
+				bit-shift = <0xa>;
+				set-bit-to-disable;
+				clocks = <&moca_dis_ch1>;
+				clock-names = "moca_dis_ch1";
+			};
+
+			moca_mdiv_ch2: moca_mdiv_ch2@f0480174 {
+				compatible = "divider-clock";
+				#clock-cells = <0x0>;
+				reg = <0xf0480174 0x4>;
+				bit-shift = <0x1>;
+				bit-mask = <0xff>;
+				index-starts-at-one;
+				clocks = <&moca_ndiv_int>;
+				clock-names = "moca_ndiv_int";
+			};
+
+			moca_dis_ch2: moca_dis_ch2@f0480174 {
+				compatible = "brcm,brcmstb-gate-clk";
+				#clock-cells = <0x0>;
+				reg = <0xf0480174 0x4>;
+				bit-shift = <0x0>;
+				set-bit-to-disable;
+				clocks = <&moca_mdiv_ch2>;
+				clock-names = "moca_mdiv_ch2";
+			};
+
+			moca_pdh_ch2: moca_pdh_ch2@f0480174 {
+				compatible = "brcm,brcmstb-gate-clk";
+				#clock-cells = <0x0>;
+				reg = <0xf0480174 0x4>;
+				bit-shift = <0xa>;
+				set-bit-to-disable;
+				clocks = <&moca_dis_ch2>;
+				clock-names = "moca_dis_ch2";
+			};
+
+			sw_moca: sw_moca {
+				compatible = "brcm,brcmstb-sw-clk";
+				#clock-cells = <0x0>;
+				clocks = <&osc_moca>, <&mocamac_54>, <&mocamac_gisb>,
+					<&mocamac_scb>, <&mocaphy_54>, <&sys0_pll_mdiv_ch3>,
+					<&sys0_pll_mdiv_ch4>, <&moca_pdh_ch0>,
+					<&moca_pdh_ch1>, <&moca_pdh_ch2>;
+				clock-names = "osc_moca", "mocamac_54", "mocamac_gisb",
+					"mocamac_scb", "mocaphy_54", "sys0_pll_mdiv_ch3",
+					"sys0_pll_mdiv_ch4", "moca_pdh_ch0", "moca_pdh_ch1",
+					"moca_pdh_ch2";
+			};
+		};
+	};
+
+	moca0: moca0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "moca0";
+		if-id = <6>;		/* rdpa_if_lan4 */
+		if-sub-id = <4>; 	/* if-sub-id must match the first column in phy-port node */
+		demux = "subid";
+		brcm-tag;
+		link-type = "switch";
+	};
+
+	bmoca: bmoca@0xf1200000 {
+		compatible = "brcm,bmoca-instance";
+		hw-rev = <0x2004>;
+		chip-id = <0x339000b0>;
+		interrupt-names = "moca";
+		reg = <0x0 0xf1200000 0x0 0x1ffda0>;
+		interrupts = <0x0 0x19 0x0>;
+		interrupts-extended = <&gic 0x0 0x19 0x0 &aon_pm_l2 0xe>;
+		rf-band = "d_high";
+		enet-id = <1>;
+		mac-address = [ 00 10 18 33 90 a0 ];
+		clocks = <&sw_moca &moca_pdh_ch2 &moca_mdiv_ch0 &moca_mdiv_ch1>;
+		clock-names = "sw_moca", "sw_mocawol", "sw_moca_cpu", "sw_moca_phy";
+		reset-gpio = <&upg_gpio 83 0>;
+	};
+};

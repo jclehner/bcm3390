@@ -1,0 +1,48 @@
+/ {
+	eth7: ethernet7 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "eth7";
+		if-id = <7>;		/* rdpa_if_lan5 */
+		if-sub-id = <7>;	/* if-sub-id must match the first column in phy-port node */
+		demux = "subid";
+		link-type = "switch";
+		connection-type = "internal_serdesplus2";
+		brcm-tag;
+	};
+
+	serdesplus2: sgmii@d0400d00 {
+		compatible = "brcm,sgmiiplus2";
+		reg = <0x0 0xd0400d00 0x0 0x18>;
+		phyaddr = <7>;
+		mux-handle = <&miimdiomux>;
+		mux-select = "switch-mdio-select";
+		mux-values = "mdio1", "none";
+		bus-handle = <&switch_mdio>;
+		xcvr-handle = <&sw_p7_phy>;
+	};
+};
+
+&switch_mdio {
+	sw_p7_phy: phy@7 {
+		compatible = "ethernet-phy-ieee802.3-c45";
+		reg = <19>;
+		phy-mode = "sgmii";
+	};
+};
+
+&ethsw {
+	mii-port = <4 0 1000>,
+		   <7 0 1000>;
+	imp-port = <5 2000>,
+		   <8 2000>;
+	xcvr-handles = <&sw_p7_phy>;
+};
+
+&runner {
+	lag-ports = < 0 1 >;
+};
+
+&unimac_pwr {
+	zone-init-pwr = <0x1>;
+};

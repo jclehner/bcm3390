@@ -1,0 +1,154 @@
+/********************************************************************
+ * The nodes that appear below are chip specific additions and
+ * replacements to the rg.3390b0-bolt.dtsi file.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+&rf4ce {
+	status = "disabled";
+
+	/* Old BOLT versions will set the above status to "ok" for all platforms,
+	so add another property for new software images to discern whether
+	status property is to be obeyed. Only valid platforms have this new property
+	set correctly to "true". */
+	trust-status = "false";
+};
+
+&pcie0 {
+	/delete-property/clocks;
+	/delete-property/clock-names;
+};
+
+&pcie1 {
+	/delete-property/clocks;
+	/delete-property/clock-names;
+};
+
+&usb_phy0 {
+	/delete-property/clocks;
+	/delete-property/clock-names;
+};
+
+&ehci_v2_0 {
+	/delete-property/clocks;
+	/delete-property/clock-names;
+};
+
+&ohci_v2_0 {
+	/delete-property/clocks;
+	/delete-property/clock-names;
+};
+
+&xhci_v2_0 {
+	/delete-property/clocks;
+	/delete-property/clock-names;
+};
+
+&ehci0 {
+	/delete-property/clocks;
+	/delete-property/clock-names;
+};
+
+&ohci0 {
+	/delete-property/clocks;
+	/delete-property/clock-names;
+};
+
+&xhci0 {
+	/delete-property/clocks;
+	/delete-property/clock-names;
+};
+
+&sdhci0 {
+	/delete-property/clocks;
+	/delete-property/clock-names;
+};
+
+&sdhci1 {
+	/delete-property/clocks;
+	/delete-property/clock-names;
+};
+
+&spi0 {
+	/delete-property/clocks;
+	/delete-property/clock-names;
+};
+
+/ {
+	/delete-node/pcie@f10c0000;
+
+	aliases {
+		/delete-property/pcie2;
+		/delete-property/usbphy1;
+		/delete-property/ehci1_0;
+		/delete-property/ohci1_0;
+		/delete-property/xhci1_0;
+		/delete-property/bdc1_0;
+		/delete-property/usb1;
+	};
+
+	rdb {
+		/delete-node/usb-phy@f1010200;
+		/delete-node/ehci_v2@f1010300;
+		/delete-node/ohci_v2@f1010400;
+		/delete-node/xhci_v2@f1011000;
+		/delete-node/bdc_v2@f1012000;
+		/delete-node/usb@f1010200;
+
+		brcmstb-clks {
+			/delete-node/lc_pwrdn_req@f0480268;
+			/delete-node/hif_sdio_card@f0480298;
+			/delete-node/hif_sdio_emmc@f0480298;
+			/delete-node/sys0_pll_pdiv@f048001c;
+			/delete-node/sys0_pll_ndiv_int;
+			/delete-node/sys0_pll_mdiv_ch0@f0480004;
+			/delete-node/sys0_pll_dis_ch0@f0480004;
+			/delete-node/sys0_pll_pdh_ch0@f0480004;
+			/delete-node/hif_spi@f0480298;
+			/delete-node/pcie_alwayson@f048039c;
+			/delete-node/sys1_pll_pdiv@f0480068;
+			/delete-node/sys1_pll_ndiv_int;
+			/delete-node/sys1_pll_mdiv_ch4@f0480064;
+			/delete-node/sys1_pll_dis_ch4@f0480064;
+			/delete-node/sys1_pll_pdh_ch4@f0480064;
+			/delete-node/pcie_duallane_300@f048039c;
+			/delete-node/pcie_rcbypref_100@f048039c;
+			/delete-node/pcie_108@f04803a4;
+			/delete-node/pcie_54@f04803a4;
+			/delete-node/pcie_gisb@f04803a4;
+			/delete-node/pcie_scb@f04803a4;
+			/delete-node/usb0_27_mdio@f0480448;
+			/delete-node/usb0_freerun@f0480448;
+			/delete-node/usb0_54@f0480450;
+			/delete-node/usb0_gisb@f0480450;
+			/delete-node/usb0_scb@f0480450;
+			/delete-node/usb0_108_ahb@f0480454;
+			/delete-node/usb0_108_axi@f048045c;
+			/delete-node/sys0_pll_mdiv_ch2@f048000c;
+			/delete-node/sys0_pll_mdiv_ch3@f0480010;
+			/delete-node/sys0_pll_mdiv_ch4@f0480014;
+			/delete-node/sys1_pll_mdiv_ch0@f0480054;
+			/delete-node/sys1_pll_mdiv_ch3@f0480060;
+			/delete-node/cpu_pdiv@f04800f0;
+			/delete-node/cpu_ndiv_int;
+			/delete-node/cpu_mdiv_ch0@f04800e8;
+			/delete-node/lc_pdiv@f0480138;
+			/delete-node/lc_ndiv_int;
+			/delete-node/lc_mdiv_ch1@f0480124;
+			/delete-node/lc_dis_ch1@f0480124;
+			/delete-node/lc_pdh_ch1@f0480124;
+			/delete-node/lc_mdiv_ch2@f0480128;
+			/delete-node/lc_dis_ch2@f0480128;
+			/delete-node/lc_pdh_ch2@f0480128;
+			/delete-node/rdp_mdiv_ch3@f04801b8;
+			/delete-node/sw_cpu;
+			/delete-node/sw_mpi;
+			/delete-node/sw_pcie0;
+			/delete-node/sw_sdio;
+			/delete-node/sw_usb20;
+			/delete-node/sw_usb30;
+		};
+	};
+};

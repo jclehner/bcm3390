@@ -1,0 +1,131 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (bcm93390<b|z|s>0-emmc-batt)";
+	compatible = "brcm,bcm93390b0-emmc-batt", "brcm,bcm93390z0-emmc-batt", "brcm,bcm93390s0-emmc-batt",
+		     "brcm,bcm3390b0-emmc-batt", "brcm,bcm3390z0-emmc-batt", "brcm,bcm3390s0-emmc-batt",
+		     "brcm,bcm3390-emmc-batt",
+		     "brcm,bcm3390",
+		     "brcm,brcmcm", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <&gic>;
+
+	identifier@0 {
+			    /*			     BMU mbox0: */
+			    /* chip id    mfg id     on emmc-battery */
+		chipid_reg = < 0x20404000 0x204e6120 0x03800080 >;
+		chipid_msk = < 0xffffffff 0x0000e000 0x00000008 >;
+		chipid_val = < 0x33900010 0x00006000 0x00000008 >;
+			     /*
+			      * Only boards supporting emmc-battery. Can't rely on
+			      * BMU's mbox0 power state on non-emmc-battery boards.
+			      */
+			     /* SMWVG2 */
+		boardid_msk = < 0xf0 >;
+		boardid_val = < 0xb0 >;
+	};
+};
+
+/include/ "rg.3390b0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+/include/ "rg.3390-batt.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+
+&pwr {
+	boot-state = "battery";
+};
+
+/ {
+	aliases {
+		sdhci1 = "/rdb/sdhci@f04a0300";
+	};
+
+	rdb {
+		sdhci1: sdhci@f04a0300 {
+			compatible = "brcm,bcm7445-sdhci";
+			reg = <0xf04a0200 0x100 0xf04a0300 0x100>;
+			reg-names = "host", "cfg";
+			interrupts = <0x0 0x24 0x0>;
+			interrupt-names = "sdio1_0";
+			sdhci,auto-cmd12;
+			clocks = <&sw_sdio>;
+			clock-names = "sw_sdio";
+		};
+
+		brcmstb-clks {
+			hif_sdio_card: hif_sdio_card@f0480298 {
+				compatible = "brcm,brcmstb-gate-clk";
+				#clock-cells = <0x0>;
+				reg = <0xf0480298 0x4>;
+				bit-shift = <0x2>;
+				set-bit-to-disable;
+			};
+
+			hif_sdio_emmc: hif_sdio_emmc@f0480298 {
+				compatible = "brcm,brcmstb-gate-clk";
+				#clock-cells = <0x0>;
+				reg = <0xf0480298 0x4>;
+				bit-shift = <0x3>;
+				set-bit-to-disable;
+			};
+
+			sys1_pll_pdiv: sys1_pll_pdiv@f0480068 {
+				compatible = "divider-clock";
+				#clock-cells = <0x0>;
+				reg = <0xf0480068 0x4>;
+				bit-shift = <0xa>;
+				bit-mask = <0xf>;
+				index-starts-at-one;
+				clocks = <&fixed1>;
+				clock-names = "fixed1";
+			};
+
+			sys1_pll_ndiv_int: sys1_pll_ndiv_int {
+				compatible = "multiplier-clock", "fixed-factor-clock";
+				#clock-cells = <0x0>;
+				reg = <0xf0480068 0x4>;
+				bit-shift = <0x0>;
+				bit-mask = <0x3ff>;
+				index-max-mult-at-zero;
+				clock-div = <0x1>;
+				clock-mult = <0xc8>;
+				clocks = <&sys1_pll_pdiv>;
+				clock-names = "sys1_pll_pdiv";
+			};
+
+			sys1_pll_mdiv_ch0: sys1_pll_mdiv_ch0@f0480054 {
+				compatible = "divider-clock";
+				#clock-cells = <0x0>;
+				reg = <0xf0480054 0x4>;
+				bit-shift = <0x1>;
+				bit-mask = <0xff>;
+				index-starts-at-one;
+				clocks = <&sys1_pll_ndiv_int>;
+				clock-names = "sys1_pll_ndiv_int";
+			};
+
+			sw_sdio: sw_sdio {
+				compatible = "brcm,brcmstb-sw-clk";
+				#clock-cells = <0x0>;
+				clocks = <&hif_sdio_card>, <&hif_sdio_emmc>,
+					<&sys1_pll_mdiv_ch0>;
+				clock-names = "hif_sdio_card", "hif_sdio_emmc",
+					"sys1_pll_mdiv_ch0";
+			};
+		};
+	};
+
+	chosen {
+		filename = "rg.3390-emmc-batt-emmc.dtb";
+	};
+};

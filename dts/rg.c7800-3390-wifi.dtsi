@@ -1,0 +1,43 @@
+/ {
+	vreg_wifi_pwr: vreg-wifi-pwr {
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-wifi-pwr";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&upg_gpio 98 0>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	vreg_wifi_rf_pwr: vreg-wifi-rf-pwr {
+		compatible = "regulator-fixed";
+		regulator-name = "vreg-wifi-rf-pwr";
+		regulator-min-microvolt = <4200000>;
+		regulator-max-microvolt = <4200000>;
+		gpio = <&upg_gpio 79 0>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
+	wifi_wps: wifi_wps {
+		compatible = "brcm,wps-gpio";
+		dev-name = "wps-gpio";
+		led0-gpio = <&upg_aon_gpio 9 0>;
+		led1-gpio = <&upg_aon_gpio 10 0>;
+		pbc-gpio = <&upg_gpio 99 0>;
+		interrupt-parent = <&upg_gpio>;
+		interrupts = <99 3>;
+	};
+};
+
+&pcie0 {
+	supply-names = "vreg-wifi-pwr", "vreg-wifi-rf-pwr";
+	vreg-wifi-pwr-supply = <&vreg_wifi_pwr>;
+	vreg-wifi-rf-pwr-supply = <&vreg_wifi_rf_pwr>;
+};
+
+&pcie1 {
+	supply-names = "vreg-wifi-pwr", "vreg-wifi-rf-pwr";
+	vreg-wifi-pwr-supply = <&vreg_wifi_pwr>;
+	vreg-wifi-rf-pwr-supply = <&vreg_wifi_rf_pwr>;
+};

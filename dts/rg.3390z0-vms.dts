@@ -1,0 +1,131 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (bcm93390z0vms)";
+	compatible = "brcm,bcm93390z0vms",
+		     "brcm,bcm3390z0",
+		     "brcm,bcm3390",
+		     "brcm,brcmcm", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <&gic>;
+
+	identifier@0 {
+			    /* chip id    mfg id     don't park */
+		chipid_reg = < 0x20404000 0x204e6120 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000f000 0x00000001 >;
+		chipid_val = < 0x33900060 0x0000a000 0x00000000 >;
+			     /* 7278VMS  */
+		boardid_msk = < 0xf0 >;
+		boardid_val = < 0xf0 >;
+	};
+};
+
+/include/ "rg.3390b0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+/include/ "rg.3390-wifi.dtsi"
+/include/ "rg.3390z0-bolt.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+/ {
+	stb0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "stb0";
+		if-id = <7>;		/* rdpa_if_lan5 */
+		if-sub-id = <7>;	/* if-sub-id is the switch port number */
+		demux = "subid";
+		link-type = "switch";
+		brcm-tag = <1>;
+	};
+};
+
+&suntop_pmx {
+	pinctrl-0 = <&stb0_pins>;
+	stb0_pins: stb0_pins {
+		pinctrl-single,bits = <
+			0x000 0x00000020 0x00000020 /* RGMII1 pad amp		<-- enable */
+			0x000 0x00000000 0x00000008 /* RGMII1 pad modehv	<-- LV CMOS/HSTL15/HSTL18 */
+		>;
+	};
+};
+
+&miimdiomux {
+	rgmii1-tx-select = "p7";
+	p7-rx-select = "rgmii1";
+	unimac-mdio-select = "none";
+	switch-mdio-select = "both";
+};
+
+&unimac_mdio {
+	compatible = "";
+};
+
+&eth1 {
+	if-id = <0x4>;
+	if-sub-id = <0x2>;
+};
+
+&ethsw {
+	mii-port   = <4 0 1000>,
+		     <7 0 1000>;
+	imp-port   = <5 2000>,
+		     <8 2000>;
+	phy-port-mask = <0x5>;
+	phy-handles = <&sw_p0_phy>,
+		      <&sw_p2_phy>;
+	led-map = <0x15>;
+};
+
+&switch_mdio {
+	/delete-property/sw_p1_phy;
+	/delete-property/sw_p3_phy;
+};
+
+&runner {
+	lag-ports = < 0 1 >;
+};
+
+&wler_rfap {
+	dev-names = "wl0";
+};
+
+&wifi_rfpwr {
+	supply-names = "vreg-wl0-rf";
+	/delete-property/vreg-wl1-rf-supply;
+	/delete-property/vreg-wl2-rf-supply;
+};
+
+/ {
+	/delete-node/vreg-wl1;
+	/delete-node/vreg-wl1-rf;
+	/delete-node/vreg-wl2;
+	/delete-node/vreg-wl2-rf;
+	/delete-node/pcie@f1090000;
+	/delete-node/ethernet2;
+	/delete-node/ethernet3;
+
+	rdb {
+		/delete-node/sdhci@f04a0100;
+		/delete-node/sdhci@f04a0300;
+	};
+
+	aliases {
+		/delete-property/pcie1;
+		/delete-property/sdhci0;
+		/delete-property/sdhci1;
+	};
+
+	chosen {
+		filename = "rg.3390z0-vms.dtb";
+	};
+
+};

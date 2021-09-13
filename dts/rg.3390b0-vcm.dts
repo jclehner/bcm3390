@@ -1,0 +1,106 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (3390b0vcm)";
+	compatible = "brcm,bcm93390b0vcm",
+		     "brcm,bcm3390b0",
+		     "brcm,bcm3390",
+		     "brcm,brcmcm", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <&gic>;
+
+	identifier@0 {
+			    /* chip id    mfg id     a/c pwr    don't park */
+		chipid_reg = < 0x20404000 0x204e6120 0x03800080 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000e000 0x00000008 0x00000001 >;
+		chipid_val = < 0x33900010 0x0000c000 0x00000000 0x00000000 >;
+			     /* VCM  */
+		boardid_msk = < 0xff >;
+		boardid_val = < 0x81 >;
+	};
+
+	identifier@1 {
+			    /* chip id    mfg id     a/c pwr    don't park */
+		chipid_reg = < 0x20404000 0x204e6120 0x03800080 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000f000 0x00000008 0x00000001 >;
+		chipid_val = < 0x33900010 0x00008000 0x00000000 0x00000000 >;
+			     /* VCM  */
+		boardid_msk = < 0xff >;
+		boardid_val = < 0x81 >;
+	};
+};
+
+/include/ "rg.3390b0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+&ethsw {
+	led-map    = <0x0f>;
+};
+
+/ {
+	/delete-node/pcie@f1080000;
+	/delete-node/pcie@f1090000;
+	/delete-node/pcie@f10c0000;
+
+	rdb {
+		rf4ce@f0e00000 {
+			status = "disabled";
+			/* Old BOLT versions will set the above status to "ok" for all platforms,
+			so add another property for new software images to discern whether
+			status property is to be obeyed. Only valid platforms have this new property
+			set correctly to "true". */
+			trust-status = "false";
+		};
+
+		/delete-node/usb-phy@f1010200;
+		/delete-node/ehci_v2@f1010300;
+		/delete-node/ohci_v2@f1010400;
+		/delete-node/xhci_v2@f1011000;
+		/delete-node/bdc_v2@f1012000;
+		/delete-node/usb@f1010200;
+		/delete-node/sdhci@f04a0100;
+		/delete-node/sdhci@f04a0300;
+
+		brcmstb-clks {
+			/delete-node/hif_sdio_card@f0480298;
+			/delete-node/hif_sdio_emmc@f0480298;
+			/delete-node/pcie_alwayson@f048039c;
+			/delete-node/pcie_duallane_300@f048039c;
+			/delete-node/pcie_rcbypref_100@f048039c;
+			/delete-node/pcie_108@f04803a4;
+			/delete-node/pcie_54@f04803a4;
+			/delete-node/pcie_gisb@f04803a4;
+			/delete-node/pcie_scb@f04803a4;
+			/delete-node/sw_sdio;
+			/delete-node/sw_pcie0;
+		};
+	};
+
+	aliases {
+		/delete-property/usbphy1;
+		/delete-property/ehci1_0;
+		/delete-property/ohci1_0;
+		/delete-property/xhci1_0;
+		/delete-property/bdc1_0;
+		/delete-property/usb1;
+		/delete-property/sdhci0;
+		/delete-property/sdhci1;
+		/delete-property/pcie0;
+		/delete-property/pcie1;
+		/delete-property/pcie2;
+	};
+
+	chosen {
+		filename = "rg.3390b0-vcm.dtb";
+	};
+};

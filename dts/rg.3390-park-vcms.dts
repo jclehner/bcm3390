@@ -1,0 +1,64 @@
+/dts-v1/;
+
+/ {
+	model = "Broadcom CM (bcm93390<b|z>0-vcms-park)";
+	compatible = "brcm,bcm93390b0-vcms-park", "brcm,bcm93390z0-vcms-park",
+		     "brcm,bcm3390b0-park", "brcm,bcm3390z0-park",
+		     "brcm,bcm3390-park",
+		     "brcm,bcm3390",
+		     "brcm,brcmcm", "brcm,brcmstb";
+	subsystem = "rg";
+	#address-cells = <0x2>;
+	#size-cells = <0x2>;
+	interrupt-parent = <&gic>;
+
+	identifier@0 {
+			    /* chip id    mfg id     park       */
+		chipid_reg = < 0x20404000 0x204e6120 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000e000 0x00000001 >;
+		chipid_val = < 0x33900010 0x0000c000 0x00000001 >;
+			     /* VCMS DCMS */
+		boardid_msk = < 0xff 0xff >;
+		boardid_val = < 0x82 0x62 >;
+	};
+
+	identifier@1 {
+			    /* chip id    mfg id     park       */
+		chipid_reg = < 0x20404000 0x204e6120 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000f000 0x00000001 >;
+		chipid_val = < 0x33900060 0x0000a000 0x00000001 >;
+			     /* VCMS DCMS */
+		boardid_msk = < 0xff 0xff >;
+		boardid_val = < 0x82 0x62 >;
+	};
+
+	identifier@2 {
+			    /* chip id    mfg id     park       */
+		chipid_reg = < 0x20404000 0x204e6120 0x20410068 >;
+		chipid_msk = < 0xffffffff 0x0000f000 0x00000001 >;
+		chipid_val = < 0x33900010 0x00008000 0x00000001 >;
+			     /* VCMS DCMS */
+		boardid_msk = < 0xff 0xff >;
+		boardid_val = < 0x82 0x62 >;
+	};
+};
+
+/include/ "rg.3390b0-bolt.dtsi"
+/include/ "rg.3390-base.dtsi"
+/include/ "rg.3390-xcms.dtsi"
+/include/ "rg.3390-park.dtsi"
+
+/********************************************************************
+ * any nodes that appear below are platform specific additions and
+ * replacements.
+ * The dtc will add or replace any properties in the nodes
+ * below to the same nodes that appear in include files above.
+ * If the property does not exist in the node above it will be added.
+ * If the property does exist it will replace it.
+ ********************************************************************/
+
+/ {
+	chosen {
+		filename = "rg.3390-park-vcms.dtb";
+	};
+};

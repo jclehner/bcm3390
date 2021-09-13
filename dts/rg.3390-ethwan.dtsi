@@ -1,0 +1,59 @@
+/ {
+	ethwan0: ethwan0 {
+		compatible = "brcm,dqnet";
+		channel = <&qchan0>;
+		dev-name = "ethwan0";
+		if-id = <1>;		/* rdpa_if_wan1 */
+		if-sub-id = <0>;
+		demux = "subid";
+		link-type = "phy";
+		mac-handle = <&wan_unimac>;
+		phy-handle = <&ethwan_phy>;
+		phy-mode = "rgmii";
+	};
+
+	wan_unimac: unimac@d0400000 {
+		compatible = "brcm,unimac";
+		reg = <0x0 0xd0400000 0x0 0x20000>;
+		interrupts = <0 121 0>,
+			     <0 122 0>;
+		mbdma_reg_offset = <0x0>;
+		unimac_reg_offset = <0x600>;
+		mdio_reg_offset = <0x62c>;
+		id_string = "unimac0";
+		mbdma_use_scb = <0>;
+		mbdma_burst_size = <128>; /* B0 bug limits SCB max burst */
+		external_phy = <1>;
+	};
+};
+
+&unimac_pwr {
+	zone-init-pwr = <0x1>;
+};
+
+&suntop_pmx {
+	ethwan_pins: ethwan_pins {
+		pinctrl-single,bits = <
+			0x000 0x00000000 0x00000020 /* RGMII1 pad amp		<-- disable */
+			0x000 0x00000000 0x00000010 /* RGMII1 pad sel gmii	<-- HV CMOS/RGMII25 */
+			0x000 0x00000008 0x00000008 /* RGMII1 pad modehv	<-- HV CMOS/RGMII25/GMII33 */
+			0x000 0x00000007 0x00000007 /* RGMII1 pad sel		<-- DRIVE_16MA */
+			0x060 0x10000000 0xf0000000 /* gpio_000			<-- RGMII1_RX_CLK */
+			0x064 0x00000001 0x0000000f /* gpio_001			<-- MII_TXEN_RGMII1_TXCTL */
+			0x064 0x00000010 0x000000f0 /* gpio_002			<-- RGMII1_RXD_00 */
+			0x064 0x00000100 0x00000f00 /* gpio_003			<-- RGMII1_RXD_01 */
+			0x064 0x00001000 0x0000f000 /* gpio_004			<-- RGMII1_RXD_02 */
+			0x064 0x00010000 0x000f0000 /* gpio_005			<-- RGMII1_RXD_03 */
+			0x064 0x00100000 0x00f00000 /* gpio_006			<-- RGMII1_TX_CLK */
+			0x064 0x01000000 0x0f000000 /* gpio_007			<-- MII_RXEN_RGMII1_RXCTL */
+			0x064 0x10000000 0xf0000000 /* gpio_008			<-- RGMII1_TXD_00 */
+			0x068 0x00000001 0x0000000f /* gpio_009			<-- RGMII1_TXD_01 */
+			0x068 0x00000010 0x000000f0 /* gpio_010			<-- RGMII1_TXD_02 */
+			0x068 0x00000100 0x00000f00 /* gpio_011			<-- RGMII1_TXD_03 */
+			0x068 0x00001000 0x0000f000 /* gpio_012			<-- RGMII1_MDIO */
+			0x068 0x00010000 0x000f0000 /* gpio_013			<-- RGMII1_MDC */
+			0x08c 0x00030000 0x000f0000 /* gpio_085			<-- RGMII1_START_STOP */
+			0x08c 0x00300000 0x00f00000 /* gpio_086			<-- RGMII1_RX_OK */
+		>;
+	};
+};
